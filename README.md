@@ -10,6 +10,10 @@ $ yawsi --help
 ```
 
 
+### Usage
+
+I usually have these Bash functions which I combine with `fzf` and `aws` CLI tool for various use cases:
+
 ```
 # AWS SSH searchable by tags
 aws-ssh() {
@@ -24,14 +28,9 @@ sshi() {
 }
 ```
 
-```
-# SSH directly to an instace
-sshi() {
-  dns=$(yawsi --aws-profile="$1" | grep $2 | awk '{print $7}') && ssh $dns
-}
-```
 
 ```
+# Set instance protection to an instance in an ASG
 aws-set-instance-protection() {
   asg=$(yawsi --aws-profile="$1" --list-asgs | fzf --exit-0 | awk '{print $1}')
   instance_id=$(yawsi --aws-profile="$1" --asg $asg | fzf --exit-0 | awk '{print $1}')
@@ -40,6 +39,7 @@ aws-set-instance-protection() {
 ```
 
 ```
+# Unset instance protection from an instance in an ASG
 aws-unset-instance-protection() {
   asg=$(yawsi --aws-profile="$1" --list-asgs | fzf --exit-0 | awk '{print $1}')
   instance_id=$(yawsi --aws-profile="$1" --asg $asg | fzf --exit-0 | awk '{print $1}')
@@ -48,6 +48,7 @@ aws-unset-instance-protection() {
 ```
 
 ```
+# Show the instance protection status of instances in an ASG
 aws-show-instance-protection() {
   asg=$(yawsi --aws-profile="$1" --list-asgs | fzf --exit-0 | awk '{print $1}')
   yawsi --aws-profile="$1" --asg $asg
