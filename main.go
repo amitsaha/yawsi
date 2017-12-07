@@ -11,8 +11,6 @@ package main
 // [profile_name]
 // region=ap-southeast-2/us-east-1
 
-// cloudi -role=<myrole> -aws-profile=profile_name
-
 import (
 	"flag"
 	"fmt"
