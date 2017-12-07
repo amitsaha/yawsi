@@ -33,7 +33,7 @@ aws-set-instance-protection() {
 ```
 aws-unset-instance-protection() {
   asg=$(yawsi --aws-profile="$1" --list-asgs | fzf --exit-0 | awk '{print $1}')
-  instance_id=$(cloudi --aws-profile="$1" --asg $asg | fzf --exit-0 | awk '{print $1}')
+  instance_id=$(yawsi --aws-profile="$1" --asg $asg | fzf --exit-0 | awk '{print $1}')
   AWS_PROFILE=$1 aws autoscaling set-instance-protection  --instance-ids $instance_id --auto-scaling-group-name $asg --no-protected-from-scale-in
 }
 ```
