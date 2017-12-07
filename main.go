@@ -127,7 +127,7 @@ func main() {
 								}
 							}
 							for _, instance := range result.AutoScalingInstances {
-								fmt.Println(*instance.InstanceId, ":", *instance.AutoScalingGroupName, ":", *instance.ProtectedFromScaleIn)
+								fmt.Println(*instance.InstanceId, ":", *instance.AutoScalingGroupName, ":", *instance.AvailabilityZone, ":", *instance.ProtectedFromScaleIn)
 							}
 						}
 					} else {
