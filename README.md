@@ -1,5 +1,14 @@
 ## Yet another AWS CLI
 
+### Install
+
+```
+$ go get github.com/amitsaha/yawsi
+
+$ yawsi --help
+...
+```
+
 
 ```
 # AWS SSH searchable by tags
