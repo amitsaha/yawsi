@@ -54,4 +54,20 @@ aws-show-instance-protection() {
   yawsi --aws-profile="$1" --asg $asg
 }
 ```
+## Building the binary
+
+You will need `go 1.8+` installed:
+
+```
+$ BINARY_NAME=yawsi make build
+```
+
+## Building DEB packages
+
+This needs `docker` installed and configured to be usable as 
+normal user:
+
+```
+ $BINARY_NAME=yawsi DEB_PACKAGE_NAME=yawsi DEB_PACKAGE_DESCRIPTION="Yet another CLI for AWS" ./build-deb.sh
+```
 
