@@ -27,6 +27,9 @@ build: vendor
 	go build -o $(BINARY_NAME) -ldflags "-X main.Version=$(VERSION)" 
 
 build-deb:      ## Build DEB package (needs docker runtime)
+	test $(BINARY_NAME)
+	test $(DEB_PACKAGE_NAME)
+	test "$(DEB_PACKAGE_DESCRIPTION)"
 	exec ${BUILD_SCRIPT}
 	
 test: vendor

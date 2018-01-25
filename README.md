@@ -59,15 +59,24 @@ aws-show-instance-protection() {
 You will need `go 1.8+` installed:
 
 ```
-$ BINARY_NAME=yawsi make build
+$ make build BINARY_NAME=yawsi
 ```
 
 ## Building DEB packages
 
-This needs `docker` installed and configured to be usable as 
+Building on your host system is supported, but you will need
+[fpm](https://github.com/jordansissel/fpm) installed:
+
+```
+$ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi HOST_BUILD=yes
+```
+
+Or if you have `docker` installed and configured to be usable as 
 normal user:
 
 ```
-$ BINARY_NAME=yawsi DEB_PACKAGE_NAME=yawsi DEB_PACKAGE_DESCRIPTION="Yet another CLI for AWS" make build-deb
+$ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi 
 ```
+
+In both cases, the resulting DEB package is in `artifacts` directory.
 

@@ -1,6 +1,10 @@
 #!/bin/bash
 set -xe
 
+if ! which docker; then
+    echo "docker engine not installed"
+    exit 1
+fi
 # Check if we have docker running and accessible
 # as the current user
 # If not bail out with the default error message
@@ -24,7 +28,7 @@ docker build --build-arg \
     version_string=$VERSION_STRING \
     --build-arg \
     binary_name=$BINARY_NAME \
-    -t $BUILD_IMAGE -f Dockerfile-go1.8 .
+    -t $BUILD_IMAGE -f Dockerfile-go .
 containerID=$(docker run --detach $BUILD_IMAGE)
 docker cp $containerID:/${BINARY_NAME} .
 sleep 1
