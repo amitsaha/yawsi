@@ -1,5 +1,5 @@
 GOPATH := $(shell go env GOPATH)
-GODEP := $(GOPATH)/bin/dep
+GODEP_BIN := $(GOPATH)/bin/dep
 GOLINT := $(GOPATH)/bin/golint
 VERSION := $(shell cat VERSION)-$(shell git rev-parse --short HEAD)
 
@@ -26,7 +26,7 @@ build: vendor
 	test $(BINARY_NAME)
 	go build -o $(BINARY_NAME) -ldflags "-X main.Version=$(VERSION)" 
 
-build-deb:      ## Build DEB package (needs docker runtime)
+build-deb:      ## Build DEB package (needs other tools)
 	test $(BINARY_NAME)
 	test $(DEB_PACKAGE_NAME)
 	test "$(DEB_PACKAGE_DESCRIPTION)"
@@ -48,7 +48,7 @@ $(GOLINT):
 vendor:         ## Vendor the packages using dep
 vendor: $(GODEP)
 	@ echo "No vendor dir found. Fetching dependencies now..."
-	GOPATH=$(GOPATH):. $(GODEP) ensure
+	GOPATH=$(GOPATH):. $(GODEP_BIN) ensure
 $(GODEP):
 	go get -u github.com/golang/dep/cmd/dep
 
