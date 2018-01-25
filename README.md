@@ -68,6 +68,6 @@ This needs `docker` installed and configured to be usable as
 normal user:
 
 ```
- $BINARY_NAME=yawsi DEB_PACKAGE_NAME=yawsi DEB_PACKAGE_DESCRIPTION="Yet another CLI for AWS" ./build-deb.sh
+$ BINARY_NAME=yawsi DEB_PACKAGE_NAME=yawsi DEB_PACKAGE_DESCRIPTION="Yet another CLI for AWS" make build-deb
 ```
 

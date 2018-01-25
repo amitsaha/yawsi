@@ -1,9 +1,15 @@
 #!/bin/bash
 set -xe
 
+# Check if we have docker running and accessible
+# as the current user
+# If not bail out with the default error message
+docker ps
+
 BUILD_IMAGE='amitsaha/golang-binary-builder'
 FPM_IMAGE='amitsaha/golang-deb-builder'
-# Package it up
+BUILD_ARTIFACTS_DIR="artifacts"
+
 version=`git rev-parse --short HEAD`
 VERSION_STRING="$(cat VERSION)-${version}"
 
@@ -38,8 +44,8 @@ docker build --build-arg \
 containerID=$(docker run -dt $FPM_IMAGE)
 # docker cp does not support wildcard:
 # https://github.com/moby/moby/issues/7710
-mkdir -p dpkg-source
-docker cp $containerID:/deb-package/${DEB_PACKAGE_NAME}-${VERSION_STRING}.deb dpkg-source/.
+mkdir -p $BUILD_ARTIFACTS_DIR
+docker cp $containerID:/deb-package/${DEB_PACKAGE_NAME}-${VERSION_STRING}.deb $BUILD_ARTIFACTS_DIR/.
 sleep 1
 docker rm -f $containerID
 rm $BINARY_NAME
