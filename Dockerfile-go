@@ -1,0 +1,10 @@
+FROM golang:1.9
+RUN go get -u github.com/golang/dep/cmd/dep
+ENV PACKAGE_PATH $GOPATH/src/git.host/mypackage
+RUN mkdir -p  $PACKAGE_PATH
+COPY . $PACKAGE_PATH
+WORKDIR $PACKAGE_PATH
+ARG version_string
+ARG binary_name
+RUN dep ensure && go build -o $GOPATH/bin/${binary_name} -ldflags "-X main.Version=${version_string}" && cp $GOPATH/bin/${binary_name} /${binary_name}
+ENTRYPOINT "/${binary_name}"

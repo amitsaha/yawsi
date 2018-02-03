@@ -106,6 +106,31 @@ List all auto scaling groups:
 ```
 $ yawsi ec2 list-ags
 ```
+## Building the binary
+
+You will need `go 1.8+` installed:
+
+```
+$ make build BINARY_NAME=yawsi
+```
+
+## Building DEB packages
+
+Building on your host system is supported, but you will need
+[fpm](https://github.com/jordansissel/fpm) installed:
+
+```
+$ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi HOST_BUILD=yes
+```
+
+Or if you have `docker` installed and configured to be usable as 
+normal user:
+
+```
+$ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi 
+```
+
+In both cases, the resulting DEB package is in `artifacts` directory.
 
 ## License
 
