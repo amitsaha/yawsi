@@ -33,7 +33,7 @@ Example setup:
 All current functionalities currently are available via the `ec2` sub-command:
 
 ```
-AWS_PROFILE=dev go run main.go
+$ AWS_PROFILE=dev yawsi
 Yet Another AWS Command Line Interface
 
 Usage:
