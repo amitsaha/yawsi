@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
-import "github.com/amitsaha/yawsi/cmd"
+import "github.com/spf13/cobra"
 
-func main() {
-	cmd.Execute()
+var ec2Cmd = &cobra.Command{
+	Use:   "ec2",
+	Short: "Commands for working with AWS EC2",
+}
+
+func init() {
+	rootCmd.AddCommand(ec2Cmd)
 }

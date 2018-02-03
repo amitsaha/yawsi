@@ -12,10 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
-import "github.com/amitsaha/yawsi/cmd"
+import "github.com/spf13/cobra"
 
-func main() {
-	cmd.Execute()
+// listAsgCmd represents the listAsg command
+var listAsgCmd = &cobra.Command{
+	Use:   "list-asgs",
+	Short: "List Autoscaling Groups",
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
+func init() {
+	ec2Cmd.AddCommand(listAsgCmd)
 }
