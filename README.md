@@ -5,9 +5,7 @@ subset of functionalities usually offered by AWS command line clients.
 
 ## Install
 
-```
-$ go get github.com/amitsaha/yawsi
-```
+Binary releases are available from the Releases page. Please download the ZIP corresponding to your OS and architecture and unzip the binary somewhere in your $PATH.
 
 
 ## Specifying AWS profile
