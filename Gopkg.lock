@@ -27,6 +27,7 @@
     "private/protocol/query/queryutil",
     "private/protocol/rest",
     "private/protocol/xml/xmlutil",
+    "service/autoscaling",
     "service/ec2",
     "service/sts"
   ]
@@ -163,6 +164,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3d39f0cfef1e982d3ae1a3ba571a8186e40f003b780e885c4a68ed0430a00d66"
+  inputs-digest = "ca53fa2c1483ce87fc870b48adb14270c3b2ede459e6d884f85a8e09f3d84780"
   solver-name = "gps-cdcl"
   solver-version = 1

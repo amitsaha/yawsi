@@ -45,6 +45,9 @@ var listInstancesCmd = &cobra.Command{
 					},
 				})
 			}
+		}
+		// Not filtering by ASG name
+		if len(asgName) == 0 {
 			params := &ec2.DescribeInstancesInput{
 				DryRun:  aws.Bool(false),
 				Filters: ec2Filters,
