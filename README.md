@@ -95,7 +95,7 @@ Launch an EC2 instance copying the configuration from another
 EC2 instance:
 
 ```
-$ yawsi ec2 launch-like <instance-id>
+$ yawsi ec2 launch-more-like <instance-id>
 ```
 
 
