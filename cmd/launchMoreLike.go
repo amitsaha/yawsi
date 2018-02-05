@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log"
 	"strings"
@@ -91,6 +92,22 @@ var launchMoreLikeCmd = &cobra.Command{
 			}
 
 		}
+		var userData *string
+		if editUserData {
+			currentUserData, err := base64.StdEncoding.DecodeString(*result.UserData.Value)
+			if err != nil {
+				fmt.Println("error:", err)
+				return
+			}
+			userData, err = modifyUserData(string(currentUserData))
+			if err != nil {
+				log.Fatalf("Error editing user data: %s", err)
+			}
+			userDataEncoded := base64.StdEncoding.EncodeToString([]byte(*userData))
+			userData = &userDataEncoded
+		} else {
+			userData = result.UserData.Value
+		}
 
 		launchParams := &ec2.RunInstancesInput{
 			ImageId:            aws.String(*instance.ImageId),
@@ -99,13 +116,11 @@ var launchMoreLikeCmd = &cobra.Command{
 			MaxCount:           aws.Int64(1),
 			IamInstanceProfile: iamInstanceProfileSpec,
 			SecurityGroups:     securityGroups,
-			UserData:           result.UserData.Value,
+			UserData:           userData,
 		}
-
 		runResult, err := svc.RunInstances(launchParams)
 		if err != nil {
-			log.Println("Could not create instance", err)
-			return
+			log.Fatal("Could not create instance", err)
 		}
 
 		log.Println("Created instance", *runResult.Instances[0].InstanceId)
@@ -116,7 +131,7 @@ var launchMoreLikeCmd = &cobra.Command{
 			Tags:      instanceTags,
 		})
 		if err != nil {
-			log.Println("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
+			log.Fatal("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
 		}
 
 		log.Println("Successfully tagged instance")
@@ -124,16 +139,9 @@ var launchMoreLikeCmd = &cobra.Command{
 	Args: cobra.ExactArgs(1),
 }
 
+var editUserData bool
+
 func init() {
 	ec2Cmd.AddCommand(launchMoreLikeCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// launchMoreLikeCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// launchMoreLikeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	launchMoreLikeCmd.Flags().BoolVarP(&editUserData, "edit-user-data", "e", false, "Edit User Data")
 }
