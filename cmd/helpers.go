@@ -24,7 +24,10 @@ func createSession() *session.Session {
 func modifyUserData(userData string) (*string, error) {
 	// TODO: support this better:
 	// https://bbengfort.github.io/snippets/2018/01/06/cli-editor-app.html
-	editor := "vim"
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vim"
+	}
 	tmpDir := os.TempDir()
 	tmpFile, tmpFileErr := ioutil.TempFile(tmpDir, "yawsiTmp")
 	if tmpFileErr != nil {

@@ -68,7 +68,7 @@ Available Commands:
 
 ## Examples
 
-List all EC2 instances:
+**List all EC2 instances**
 
 ```
 $ yawsi ec2 list-instances
@@ -77,29 +77,40 @@ i-031a7bbcfb163de12 : running : 127h8m23.809358629s : ec2-54-206-131-205.ap-sout
 
 ```
 
-List all EC2 instances having certain tags:
+**List all EC2 instances having certain tags**
 
 ```
 $ yawsi ec2 list-instances --tags "key1:value1,key2:value2"
 ...
 ```
 
-List all EC2 instances attached to an autoscaling group:
+**List all EC2 instances attached to an autoscaling group**
 
 ```
 $ yawsi ec2 list-instances --asg myasgname
 ...
 ```
 
-Launch an EC2 instance copying the configuration from another
-EC2 instance:
+**Launch an EC2 instance copying the configuration from another EC2 instance**
 
 ```
 $ yawsi ec2 launch-more-like <instance-id>
 ```
 
+**Launch an EC2 instance copying the configuration from another EC2 instance, but modifying the user data**
 
-List all auto scaling groups:
+```
+ $ AWS_PROFILE=dev go run main.go ec2 launch-more-like <instance-id> --edit-user-data
+```
+
+It looks up the `EDITOR` environment variable to find out the editor that you will be using
+to edit the user data. If one is not found, it defaults to `vim`. You can override it as:
+
+```
+$ EDITOR=nano ..
+```
+
+**List all auto scaling groups**
 
 ```
 $ yawsi ec2 list-ags
@@ -133,6 +144,3 @@ In both cases, the resulting DEB package is in `artifacts` directory.
 ## License
 
 See `LICENSE`.
-
-
-

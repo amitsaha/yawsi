@@ -92,7 +92,6 @@ var launchMoreLikeCmd = &cobra.Command{
 			}
 
 		}
-		// Edit user data?
 		var userData *string
 		if editUserData {
 			currentUserData, err := base64.StdEncoding.DecodeString(*result.UserData.Value)
@@ -121,8 +120,7 @@ var launchMoreLikeCmd = &cobra.Command{
 		}
 		runResult, err := svc.RunInstances(launchParams)
 		if err != nil {
-			log.Println("Could not create instance", err)
-			return
+			log.Fatal("Could not create instance", err)
 		}
 
 		log.Println("Created instance", *runResult.Instances[0].InstanceId)
@@ -133,7 +131,7 @@ var launchMoreLikeCmd = &cobra.Command{
 			Tags:      instanceTags,
 		})
 		if err != nil {
-			log.Println("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
+			log.Fatal("Could not create tags for instance", runResult.Instances[0].InstanceId, err)
 		}
 
 		log.Println("Successfully tagged instance")
