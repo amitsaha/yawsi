@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -23,11 +22,13 @@ func createSession() *session.Session {
 }
 
 func modifyUserData(userData string) (*string, error) {
-	vi := "vim"
+	// TODO: support this better:
+	// https://bbengfort.github.io/snippets/2018/01/06/cli-editor-app.html
+	editor := "vim"
 	tmpDir := os.TempDir()
-	tmpFile, tmpFileErr := ioutil.TempFile(tmpDir, "tempFilePrefix")
+	tmpFile, tmpFileErr := ioutil.TempFile(tmpDir, "yawsiTmp")
 	if tmpFileErr != nil {
-		fmt.Printf("Error %s while creating tempFile", tmpFileErr)
+		return nil, tmpFileErr
 	}
 
 	err := ioutil.WriteFile(tmpFile.Name(), []byte(userData), 0644)
@@ -36,9 +37,8 @@ func modifyUserData(userData string) (*string, error) {
 	}
 	defer os.Remove(tmpFile.Name())
 
-	path, err := exec.LookPath(vi)
+	path, err := exec.LookPath(editor)
 	if err != nil {
-		fmt.Printf("Error %s while looking up for %s!!", path, vi)
 		return nil, err
 	}
 
@@ -50,7 +50,6 @@ func modifyUserData(userData string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Waiting for command to finish.\n")
 	err = cmd.Wait()
 	if err != nil {
 		return nil, err

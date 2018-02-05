@@ -119,7 +119,6 @@ var launchMoreLikeCmd = &cobra.Command{
 			SecurityGroups:     securityGroups,
 			UserData:           userData,
 		}
-		userDataDecoded, _ := base64.StdEncoding.DecodeString(*launchParams.UserData)
 		runResult, err := svc.RunInstances(launchParams)
 		if err != nil {
 			log.Println("Could not create instance", err)
