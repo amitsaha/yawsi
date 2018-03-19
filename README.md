@@ -30,9 +30,11 @@ Example setup:
 
 ## Sub-commands
 
-All current functionalities currently are available via the `ec2` sub-command:
+All current functionalities currently are available via the `ec2` and `auto-scaling-groups`
+sub-commands:
 
 ```
+
 $ AWS_PROFILE=dev yawsi
 Yet Another AWS Command Line Interface
 
@@ -40,11 +42,13 @@ Usage:
   yawsi [command]
 
 Available Commands:
-  ec2         Commands for working with AWS EC2
-  help        Help about any command
+  auto-scaling-groups Commands for working with AWS Auto Scaling Groups
+  ec2                 Commands for working with AWS EC2
+  help                Help about any command
 
 Flags:
   -h, --help   help for yawsi
+
 
 Use "yawsi [command] --help" for more information about a command.
 ```
@@ -61,9 +65,27 @@ Usage:
 
 Available Commands:
   launch-more-like Launch AWS EC2 classic instance like another instance
-  list-asgs        List Autoscaling Groups
   list-instances   List EC2 instances
 
+```
+
+Auto scaling groups sub-commands:
+
+```
+$ yawsi auto-scaling-groups help
+
+Commands for working with AWS Auto Scaling Groups
+
+Usage:
+  yawsi auto-scaling-groups [command]
+
+Available Commands:
+  list-asgs   List Autoscaling Groups
+
+Flags:
+  -h, --help   help for auto-scaling-groups
+
+Use "yawsi auto-scaling-groups [command] --help" for more information about a command.
 ```
 
 ## Examples
@@ -91,11 +113,24 @@ $ yawsi ec2 list-instances --asg myasgname
 ...
 ```
 
+**Describe a specific instance also showing the current tags**
+
+```
+$ yawsu ec2 list-instances --instance-id <instance-id> --show-tags
+```
+
 **Launch an EC2 instance copying the configuration from another EC2 instance**
 
 ```
 $ yawsi ec2 launch-more-like <instance-id>
 ```
+
+**Launch an EC2 instance copying the configuration from another EC2 instance and updating the tags**
+
+```
+$ yawsi ec2 launch-more-like <instance-id> --update-tags "tag1:value,tag2:value"
+```
+
 
 **Launch an EC2 instance copying the configuration from another EC2 instance, but modifying the user data**
 
@@ -113,7 +148,7 @@ $ EDITOR=nano ..
 **List all auto scaling groups**
 
 ```
-$ yawsi ec2 list-ags
+$ yawsi auto-scaling-groups --list-ags
 ```
 ## Building the binary
 
