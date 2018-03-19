@@ -16,3 +16,4 @@ for pair in linux/386 linux/amd64 linux/arm linux/arm64 darwin/amd64 dragonfly/a
     zip "$OBJECT_FILE.zip" $OBJECT_FILE
     popd
 done
+git push --tags
