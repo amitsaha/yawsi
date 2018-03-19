@@ -92,6 +92,24 @@ var launchMoreLikeCmd = &cobra.Command{
 			}
 
 		}
+
+		// Add/update additional user specified tags
+		// Since the tags will be added to the instance in order
+		// they are created, any user specified tag value will
+		// override the existing tag value automatically
+		if len(updateTags) != 0 {
+			for _, f := range strings.Split(updateTags, ",") {
+				kv := strings.Split(f, ":")
+				key := strings.TrimSpace(kv[0])
+				value := strings.TrimSpace(kv[1])
+
+				instanceTags = append(instanceTags, &ec2.Tag{
+					Key:   &key,
+					Value: &value,
+				})
+			}
+		}
+
 		var userData *string
 		if editUserData {
 			currentUserData, err := base64.StdEncoding.DecodeString(*result.UserData.Value)
@@ -140,8 +158,11 @@ var launchMoreLikeCmd = &cobra.Command{
 }
 
 var editUserData bool
+var updateTags string
 
 func init() {
 	ec2Cmd.AddCommand(launchMoreLikeCmd)
 	launchMoreLikeCmd.Flags().BoolVarP(&editUserData, "edit-user-data", "e", false, "Edit User Data")
+	launchMoreLikeCmd.Flags().StringVarP(&updateTags, "update-tags", "u", "", "Add/update tags")
+
 }
