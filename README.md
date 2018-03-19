@@ -1,7 +1,13 @@
 ## Yet Another AWS Command Line Interface
 
 This is `yawsi` - a hobby project to implement a very minimal
-subset of functionalities usually offered by AWS command line clients.
+subset of functionalities usually offered by AWS command line clients. It also has a set
+of commands directly exposing certain "workflow" scenarios that you would need to
+look up the AWS CLI manual for. 
+
+I think the feature I am most excited about having and which I didn't find in another tool
+is the `yawsi ec2 launch-more-like`  command.
+
 
 ## Install
 
