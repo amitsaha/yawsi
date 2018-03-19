@@ -35,6 +35,15 @@ var listInstancesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var ec2Filters []*ec2.Filter
 
+		if len(instanceID) != 0 {
+			ec2Filters = append(ec2Filters, &ec2.Filter{
+				Name: aws.String("instance-id"),
+				Values: []*string{
+					aws.String(strings.TrimSpace(instanceID)),
+				},
+			})
+		}
+
 		if len(tags) != 0 {
 			for _, f := range strings.Split(tags, ",") {
 				kv := strings.Split(f, ":")
@@ -61,6 +70,12 @@ var listInstancesCmd = &cobra.Command{
 							now := time.Now()
 							uptime := now.Sub(*instance.LaunchTime)
 							fmt.Println(*instance.InstanceId, ":", *instance.State.Name, ":", uptime, ":", *instance.PublicDnsName, ":", *instance.PrivateDnsName)
+
+							if listTags == true {
+								for _, tag := range instance.Tags {
+									fmt.Printf("%s:%s\n", *tag.Key, *tag.Value)
+								}
+							}
 						}
 					}
 					return lastPage
@@ -139,9 +154,14 @@ var listInstancesCmd = &cobra.Command{
 
 var tags string
 var asgName string
+var instanceID string
+var listTags bool
 
 func init() {
 	ec2Cmd.AddCommand(listInstancesCmd)
+	listInstancesCmd.Flags().StringVarP(&instanceID, "instance-id", "i", "", "Show details of the specified instance")
 	listInstancesCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
 	listInstancesCmd.Flags().StringVarP(&asgName, "asg", "a", "", "List instances attached to this ASG")
+	listInstancesCmd.Flags().BoolVarP(&listTags, "show-tags", "s", false, "Show instance tags")
+
 }

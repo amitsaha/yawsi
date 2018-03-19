@@ -67,5 +67,5 @@ var listAsgCmd = &cobra.Command{
 }
 
 func init() {
-	ec2Cmd.AddCommand(listAsgCmd)
+	asgCmd.AddCommand(listAsgCmd)
 }
