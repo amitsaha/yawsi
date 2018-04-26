@@ -29,7 +29,7 @@ Example setup:
  ..
 
  2. Create ~/.aws/config of the form:
- [profile_name]
+ [profile profile_name]
  region=ap-southeast-2/us-east-1
 
  ```
