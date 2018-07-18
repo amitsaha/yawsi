@@ -49,11 +49,8 @@ var listInstancesCmd = &cobra.Command{
 		if len(tags) != 0 {
 			for _, tag := range strings.Split(tags, ",") {
 				tag = strings.TrimSpace(tag)
-				log.Printf(tag)
 				key := tag[0:strings.LastIndex(tag, ":")]
 				value := tag[strings.LastIndex(tag, ":")+1 : len(tag)]
-				log.Printf(key)
-				log.Printf(value)
 
 				ec2Filters = append(ec2Filters, &ec2.Filter{
 					Name: aws.String("tag:" + key),
