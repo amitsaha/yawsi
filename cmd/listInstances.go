@@ -34,14 +34,16 @@ var listInstancesCmd = &cobra.Command{
 	Long:  `List EC2 instances. Filter by tags (tag1:value1, tag2:value2)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var ec2Filters []*ec2.Filter
+		var inputInstanceIds []*string
+		var inputInstanceIdsMap = make(map[string]bool)
 
-		if len(instanceID) != 0 {
-			ec2Filters = append(ec2Filters, &ec2.Filter{
-				Name: aws.String("instance-id"),
-				Values: []*string{
-					aws.String(strings.TrimSpace(instanceID)),
-				},
-			})
+		if len(instanceIds) != 0 {
+			instances := strings.Split(instanceIds, ",")
+			for idx := range instances {
+				inputInstanceIds = append(inputInstanceIds, &instances[idx])
+				inputInstanceIdsMap[instances[idx]] = true
+			}
+
 		}
 
 		if len(tags) != 0 {
@@ -58,8 +60,9 @@ var listInstancesCmd = &cobra.Command{
 		// Not filtering by ASG name
 		if len(asgName) == 0 {
 			params := &ec2.DescribeInstancesInput{
-				DryRun:  aws.Bool(false),
-				Filters: ec2Filters,
+				DryRun:      aws.Bool(false),
+				Filters:     ec2Filters,
+				InstanceIds: inputInstanceIds,
 			}
 			sess := createSession()
 			svc := ec2.New(sess)
@@ -126,8 +129,16 @@ var listInstancesCmd = &cobra.Command{
 										fmt.Println(err.Error())
 									}
 								}
-								for _, instance := range result.AutoScalingInstances {
-									fmt.Println(*instance.InstanceId, ":", *instance.AutoScalingGroupName, ":", *instance.AvailabilityZone, ":", *instance.ProtectedFromScaleIn)
+								for _, currentInstance := range result.AutoScalingInstances {
+									// If we are filtering by instance IDs, only show the details for the specified
+									// instance IDs
+									if len(inputInstanceIds) != 0 {
+										if _, ok := inputInstanceIdsMap[*currentInstance.InstanceId]; ok {
+											fmt.Println(*currentInstance.InstanceId, ":", *currentInstance.AutoScalingGroupName, ":", *currentInstance.AvailabilityZone, ":", *currentInstance.ProtectedFromScaleIn)
+										}
+									} else {
+										fmt.Println(*currentInstance.InstanceId, ":", *currentInstance.AutoScalingGroupName, ":", *currentInstance.AvailabilityZone, ":", *currentInstance.ProtectedFromScaleIn)
+									}
 								}
 							}
 						} else {
@@ -154,12 +165,12 @@ var listInstancesCmd = &cobra.Command{
 
 var tags string
 var asgName string
-var instanceID string
+var instanceIds string
 var listTags bool
 
 func init() {
 	ec2Cmd.AddCommand(listInstancesCmd)
-	listInstancesCmd.Flags().StringVarP(&instanceID, "instance-id", "i", "", "Show details of the specified instance")
+	listInstancesCmd.Flags().StringVarP(&instanceIds, "instance-id", "i", "", "Show details of the specified instance(s) (Example: i-a121aas, i=1212aa)")
 	listInstancesCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
 	listInstancesCmd.Flags().StringVarP(&asgName, "asg", "a", "", "List instances attached to this ASG")
 	listInstancesCmd.Flags().BoolVarP(&listTags, "show-tags", "s", false, "Show instance tags")
