@@ -15,9 +15,8 @@
 package cmd
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/spf13/cobra"
 )
@@ -27,42 +26,15 @@ var listAsgCmd = &cobra.Command{
 	Use:   "list-asgs",
 	Short: "List Autoscaling Groups",
 	Run: func(cmd *cobra.Command, args []string) {
+
 		// Default to 100 here, not sure how this works
 		// with paging when we have  more than 100 ASGs
 		maxSize := int64(100)
 		params := &autoscaling.DescribeAutoScalingGroupsInput{
 			MaxRecords: &maxSize,
 		}
-
-		sess := createSession()
-		svc := autoscaling.New(sess)
-		err := svc.DescribeAutoScalingGroupsPages(params,
-			func(result *autoscaling.DescribeAutoScalingGroupsOutput, lastPage bool) bool {
-				// When we support multiple ASG names, this will be a way
-				// to list all the instances attached to the ASGs
-				for _, group := range result.AutoScalingGroups {
-					fmt.Println(*group.AutoScalingGroupName)
-				}
-				return lastPage
-			})
-		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				case autoscaling.ErrCodeInvalidNextToken:
-					fmt.Println(autoscaling.ErrCodeInvalidNextToken, aerr.Error())
-				case autoscaling.ErrCodeResourceContentionFault:
-					fmt.Println(autoscaling.ErrCodeResourceContentionFault, aerr.Error())
-				default:
-					fmt.Println(aerr.Error())
-				}
-			} else {
-				// Print the error, cast err to awserr.Error to get the Code and
-				// Message from an error.
-				fmt.Println(err.Error())
-			}
-			return
-		}
-
+		autoScalingGroups := getAutoScalingGroups(params)
+		log.Printf("%v\n", autoScalingGroups)
 	},
 }
 

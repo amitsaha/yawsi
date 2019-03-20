@@ -20,6 +20,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
+	fuzzyfinder "github.com/ktr0731/go-fuzzyfinder"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
@@ -27,11 +30,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func displayFixedInstanceDetails(instanceData []*instanceState) {
+
+	for _, instance := range instanceData {
+		now := time.Now()
+		uptime := now.Sub(*instance.LaunchTime)
+
+		red := color.New(color.FgRed)
+		boldRed := red.Add(color.Bold)
+
+		instanceName := ""
+
+		for _, tag := range instance.Tags {
+			if *tag.Key == "Name" {
+				instanceName = *tag.Value
+			}
+		}
+
+		boldRed.Println(instance.InstanceId, ":", instanceName, ":", instance.PrivateIPAddresses, ":", instance.State, ":", uptime)
+	}
+}
+
 // listInstancesCmd represents the listInstances command
-var listInstancesCmd = &cobra.Command{
-	Use:   "list-instances",
-	Short: "List EC2 instances",
-	Long:  `List EC2 instances. Filter by tags (tag1:value1, tag2:value2)`,
+var describeInstancesCmd = &cobra.Command{
+	Use:   "describe-instances",
+	Short: "Describe EC2 instances",
+	Long:  `Describe EC2 instances. Filter by tags (tag1:value1, tag2:value2), auto scaling group, interactive selection and more`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var ec2Filters []*ec2.Filter
 		var inputInstanceIds []*string
@@ -60,34 +84,31 @@ var listInstancesCmd = &cobra.Command{
 				})
 			}
 		}
+
+		if instanceAsgFilter && len(asgName) != 0 {
+			cmd.Usage()
+			log.Fatal("Only one of --instance-asg-filter and --asg must be specified")
+		}
+
+		if instanceAsgFilter {
+			maxSize := int64(100)
+			params := &autoscaling.DescribeAutoScalingGroupsInput{
+				MaxRecords: &maxSize,
+			}
+			autoScalingGroups := getAutoScalingGroups(params)
+			idx, _ := fuzzyfinder.Find(autoScalingGroups, func(i int) string {
+				return fmt.Sprintf("%s", *autoScalingGroups[i].AutoScalingGroupName)
+			})
+			asgName = *autoScalingGroups[idx].AutoScalingGroupName
+		}
+
 		// Not filtering by ASG name
 		if len(asgName) == 0 {
-			params := &ec2.DescribeInstancesInput{
-				DryRun:      aws.Bool(false),
-				Filters:     ec2Filters,
-				InstanceIds: inputInstanceIds,
-			}
-			sess := createSession()
-			svc := ec2.New(sess)
-			err := svc.DescribeInstancesPages(params,
-				func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
-					for _, r := range result.Reservations {
-						for _, instance := range r.Instances {
-							now := time.Now()
-							uptime := now.Sub(*instance.LaunchTime)
-							fmt.Println(*instance.InstanceId, ":", *instance.State.Name, ":", uptime, ":", *instance.PublicDnsName, ":", *instance.PrivateDnsName)
-
-							if listTags == true {
-								for _, tag := range instance.Tags {
-									fmt.Printf("%s:%s\n", *tag.Key, *tag.Value)
-								}
-							}
-						}
-					}
-					return lastPage
-				})
-			if err != nil {
-				log.Fatal(err)
+			instancesData := getEC2InstanceData(ec2Filters, inputInstanceIds...)
+			if listInstances {
+				displayFixedInstanceDetails(instancesData)
+			} else {
+				displayEC2Interactive(instancesData)
 			}
 		}
 
@@ -166,16 +187,17 @@ var listInstancesCmd = &cobra.Command{
 	},
 }
 
+var listInstances bool
 var tags string
 var asgName string
-var instanceIds string
 var listTags bool
+var instanceAsgFilter bool
 
 func init() {
-	ec2Cmd.AddCommand(listInstancesCmd)
-	listInstancesCmd.Flags().StringVarP(&instanceIds, "instance-id", "i", "", "Show details of the specified instance(s) (Example: i-a121aas, i=1212aa)")
-	listInstancesCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
-	listInstancesCmd.Flags().StringVarP(&asgName, "asg", "a", "", "List instances attached to this ASG")
-	listInstancesCmd.Flags().BoolVarP(&listTags, "show-tags", "s", false, "Show instance tags")
-
+	ec2Cmd.AddCommand(describeInstancesCmd)
+	describeInstancesCmd.Flags().BoolVarP(&listInstances, "list", "", false, "List instances")
+	describeInstancesCmd.Flags().StringVarP(&instanceIds, "instance-id", "i", "", "Show details of the specified instance(s) (Example: i-a121aas, i=1212aa)")
+	describeInstancesCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
+	describeInstancesCmd.Flags().StringVarP(&asgName, "asg", "a", "", "List instances attached to this ASG")
+	describeInstancesCmd.Flags().BoolVarP(&instanceAsgFilter, "filter-by-asg", "", false, "Select instances attached to an Auto Scaling Group")
 }

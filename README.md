@@ -5,18 +5,36 @@ subset of functionalities usually offered by AWS command line clients. It also h
 of commands directly exposing certain "workflow" scenarios that you would need to
 look up the AWS CLI manual for. 
 
-I think the feature I am most excited about having and which I didn't find in another tool
-is the `yawsi ec2 launch-more-like`  command.
+### Top reasons why you may be interested
+
+I think the commands I am most excited about are and perhaps worth your time are:
+
+- [yawsi ec2 inspect](./docs/yawsi_ec2_inspect.md)
+- [yawsi ec2 launch-more-like](./docs/yawsi_ec2_launch-more-like.md)
+
+Some of the sub-commands provide an fuzzy interactive interface making use of 
+[go-fuzzyfinder](https://github.com/ktr0731/go-fuzzyfinder) which is another feature I really like.
+
+The command [yawsi vpc list-nacl-entries](./docs/yawsi_vpc_list-nacl-entries.md) also has the capability
+to generate [Terraform]h(ttps://www.terraform.io/) code for AWS network ACL entries given an AWS network acl ID.
+I found this to be really useful when importing existing AWS NACL resources into Terraform.
+
+For a list of all the commands/sub-commands, please see [docs](./docs/yawsi.md).
 
 
 ## Install
 
-Binary releases are available from the Releases page. Please download the ZIP corresponding to your OS and architecture and unzip the binary somewhere in your $PATH.
+Binary releases are available from the [releases](https://github.com/amitsaha/yawsi/releases) page. 
+Please download the ZIP corresponding to your OS/architecture, unzip the file and place the binary somewhere
+on your system which is added to the system path. 
 
 
 ## Specifying AWS profile
 
-Specify the AWS profile via the `AWS_PROFILE` environment variable.
+Specify the AWS profile via the `AWS_PROFILE` environment variable. You may also need to specify
+the `AWS_REGION` environment variable explicitly. See [here](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) to learn more and other
+options.
+
 Example setup:
 
 ```
@@ -34,131 +52,10 @@ Example setup:
 
  ```
 
-## Sub-commands
 
-All current functionalities currently are available via the `ec2` and `auto-scaling-groups`
-sub-commands:
-
-```
-
-$ AWS_PROFILE=dev yawsi
-Yet Another AWS Command Line Interface
-
-Usage:
-  yawsi [command]
-
-Available Commands:
-  auto-scaling-groups Commands for working with AWS Auto Scaling Groups
-  ec2                 Commands for working with AWS EC2
-  help                Help about any command
-
-Flags:
-  -h, --help   help for yawsi
-
-
-Use "yawsi [command] --help" for more information about a command.
-```
-
-EC2 sub-commands:
-
-```
-
-$ AWS_PROFILE=dev yawsi ec2 help
-Commands for working with AWS EC2
-
-Usage:
-  yawsi ec2 [command]
-
-Available Commands:
-  launch-more-like Launch AWS EC2 classic instance like another instance
-  list-instances   List EC2 instances
-
-```
-
-Auto scaling groups sub-commands:
-
-```
-$ yawsi auto-scaling-groups help
-
-Commands for working with AWS Auto Scaling Groups
-
-Usage:
-  yawsi auto-scaling-groups [command]
-
-Available Commands:
-  list-asgs   List Autoscaling Groups
-
-Flags:
-  -h, --help   help for auto-scaling-groups
-
-Use "yawsi auto-scaling-groups [command] --help" for more information about a command.
-```
-
-## Examples
-
-**List all EC2 instances**
-
-```
-$ yawsi ec2 list-instances
-i-031a7bbcfb163de12 : running : 127h8m23.809358629s : ec2-54-206-131-205.ap-southeast-2.compute.amazonaws.com : ip-10-219-32-208.ap-southeast-2.compute.internal
-...
-
-```
-
-**List all EC2 instances having certain tags**
-
-```
-$ yawsi ec2 list-instances --tags "key1:value1,key2:value2"
-...
-```
-
-**List all EC2 instances attached to an autoscaling group**
-
-```
-$ yawsi ec2 list-instances --asg myasgname
-...
-```
-
-**Describe a specific instance also showing the current tags**
-
-```
-$ yawsu ec2 list-instances --instance-id <instance-id> --show-tags
-```
-
-**Launch an EC2 instance copying the configuration from another EC2 instance**
-
-```
-$ yawsi ec2 launch-more-like <instance-id>
-```
-
-**Launch an EC2 instance copying the configuration from another EC2 instance and updating the tags**
-
-```
-$ yawsi ec2 launch-more-like <instance-id> --update-tags "tag1:value,tag2:value"
-```
-
-
-**Launch an EC2 instance copying the configuration from another EC2 instance, but modifying the user data**
-
-```
- $ AWS_PROFILE=dev go run main.go ec2 launch-more-like <instance-id> --edit-user-data
-```
-
-It looks up the `EDITOR` environment variable to find out the editor that you will be using
-to edit the user data. If one is not found, it defaults to `vim`. You can override it as:
-
-```
-$ EDITOR=nano ..
-```
-
-**List all auto scaling groups**
-
-```
-$ yawsi auto-scaling-groups --list-ags
-```
 ## Building the binary
 
-You will need `go 1.8+` installed:
+You will need `go 1.12+` installed:
 
 ```
 $ make build BINARY_NAME=yawsi
@@ -173,11 +70,11 @@ Building on your host system is supported, but you will need
 $ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi HOST_BUILD=yes
 ```
 
-Or if you have `docker` installed and configured to be usable as 
+Or if you have `docker` installed and configured to be usable as
 normal user:
 
 ```
-$ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi 
+$ make build-deb DEB_PACKAGE_DESCRIPTION="Yet another AWS CLI" DEB_PACKAGE_NAME=yawsi BINARY_NAME=yawsi
 ```
 
 In both cases, the resulting DEB package is in `artifacts` directory.

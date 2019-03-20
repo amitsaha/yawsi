@@ -16,11 +16,11 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-var asgCmd = &cobra.Command{
-	Use:   "auto-scaling-groups",
-	Short: "Commands for working with AWS Auto Scaling Groups",
+var vpcCmd = &cobra.Command{
+	Use:   "vpc",
+	Short: "Commands for working with AWS VPCs",
 }
 
 func init() {
-	rootCmd.AddCommand(asgCmd)
+	RootCmd.AddCommand(vpcCmd)
 }

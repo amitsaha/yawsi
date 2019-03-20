@@ -18,22 +18,11 @@ endif
 .PHONY: all
 all: lint vet test build 
 
-$(GODEP):
-	go get -u github.com/golang/dep/cmd/dep
-
-Gopkg.toml: $(GODEP)
-	$(GODEP_BIN) init
-
-vendor:         ## Vendor the packages using dep
-vendor: $(GODEP) Gopkg.toml Gopkg.lock
-	@ echo "No vendor dir found. Fetching dependencies now..."
-	GOPATH=$(GOPATH):. $(GODEP_BIN) ensure
 
 version:
 	@ echo $(VERSION)
 
 build:          ## Build the binary
-build: vendor
 	test $(BINARY_NAME)
 	go build -o $(BINARY_NAME) -ldflags "-X main.Version=$(VERSION)" 
 
@@ -43,15 +32,13 @@ build-deb:      ## Build DEB package (needs other tools)
 	test "$(DEB_PACKAGE_DESCRIPTION)"
 	exec ${BUILD_SCRIPT}
 	
-test: vendor
+test: 
 	go test -race $(packages)
 
 vet:            ## Run go vet
-vet: vendor
 	go tool vet -printfuncs=Debug,Debugf,Debugln,Info,Infof,Infoln,Error,Errorf,Errorln $(files)
 
 lint:           ## Run go lint
-lint: vendor $(GOLINT)
 	$(GOLINT) -set_exit_status $(packages)
 $(GOLINT):
 	go get -u github.com/golang/lint/golint

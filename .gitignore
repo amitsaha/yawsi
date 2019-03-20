@@ -2,3 +2,5 @@ vendor/
 artifacts
 yawsi
 dist
+*exe
+.terraform

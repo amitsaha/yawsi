@@ -14,13 +14,25 @@
 
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"log"
 
-var ec2Cmd = &cobra.Command{
-	Use:   "ec2",
-	Short: "Commands for working with AWS EC2",
+	"github.com/spf13/cobra"
+)
+
+// listAsgCmd represents the listAsg command
+var getWindowsPassword = &cobra.Command{
+	Use:   "get-windows-password",
+	Short: "Get Windows Password",
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Printf("%s\n", getWindowsPasswordHelper(args[0], KeyPath))
+	},
+	Args: cobra.ExactArgs(1),
 }
 
+var KeyPath string
+
 func init() {
-	RootCmd.AddCommand(ec2Cmd)
+	ec2Cmd.AddCommand(getWindowsPassword)
+	getWindowsPassword.Flags().StringVarP(&KeyPath, "key-path", "k", "", "Private Key to decrypt the password")
 }
