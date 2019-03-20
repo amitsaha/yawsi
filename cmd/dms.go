@@ -16,11 +16,11 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-var ec2Cmd = &cobra.Command{
-	Use:   "ec2",
-	Short: "Commands for working with AWS EC2",
+var dmsCmd = &cobra.Command{
+	Use:   "dms",
+	Short: "Commands for working with AWS DMS",
 }
 
 func init() {
-	RootCmd.AddCommand(ec2Cmd)
+	RootCmd.AddCommand(dmsCmd)
 }

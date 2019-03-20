@@ -16,11 +16,11 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-var ec2Cmd = &cobra.Command{
-	Use:   "ec2",
-	Short: "Commands for working with AWS EC2",
+var vpcCmd = &cobra.Command{
+	Use:   "vpc",
+	Short: "Commands for working with AWS VPCs",
 }
 
 func init() {
-	RootCmd.AddCommand(ec2Cmd)
+	RootCmd.AddCommand(vpcCmd)
 }

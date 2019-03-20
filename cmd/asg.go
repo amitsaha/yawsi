@@ -16,11 +16,11 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-var ec2Cmd = &cobra.Command{
-	Use:   "ec2",
-	Short: "Commands for working with AWS EC2",
+var asgCmd = &cobra.Command{
+	Use:   "auto-scaling-groups",
+	Short: "Commands for working with AWS Auto Scaling Groups",
 }
 
 func init() {
-	RootCmd.AddCommand(ec2Cmd)
+	RootCmd.AddCommand(asgCmd)
 }

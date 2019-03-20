@@ -1,5 +1,27 @@
+/*
 
-                                 Apache License
+This file has been copied from https://github.com/tomrittervg/decrypt-windows-ec2-passwd/blob/master/decrypt-windows-ec2-passwd.go
+
+Modifications by Amit Saha
+
+1. Add original Apache License
+2. Rename main() function to decryptWindowsPassword() to take two arguments instead of reading os.Args
+3. Change panic(err) to return the error
+
+*/
+
+// This utility decrypts the passwords that Windows EC2 instances generate.
+//
+// When starting a Windows VM on EC2, after some time an encrypted password is
+// written to the VM's log. The password is encrypted using the SSH public key
+// configured for that VM. The Amazon web interface can decrypt the password -
+// if you paste in your private key. Given that that's insane, this utility
+// exists to decrypt the base64-encoded password given an SSH private key. It
+// can handle encrypted private keys.
+
+/*
+
+Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
 
@@ -179,7 +201,7 @@
    APPENDIX: How to apply the Apache License to your work.
 
       To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "[]"
+      boilerplate notice, with the fields enclosed by brackets "{}"
       replaced with your own identifying information. (Don't include
       the brackets!)  The text should be enclosed in the appropriate
       comment syntax for the file format. We also recommend that a
@@ -187,7 +209,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [2019] [Amit Saha]
+   Copyright {yyyy} {name of copyright owner}
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -200,3 +222,67 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+*/
+
+package cmd
+
+import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+
+	"golang.org/x/crypto/ssh/terminal"
+)
+
+func decryptWindowsPassword(pemPath string, encryptedPasswdB64 string) (string, error) {
+
+	/*    Commented out by Amit Saha
+
+	if len(os.Args) != 3 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <path to private key> <encrypted password>\n", os.Args[0])
+		os.Exit(1)
+	}
+	pemPath := os.Args[1]
+	encryptedPasswdB64 := os.Args[2]
+	*/
+
+	encryptedPasswd, err := base64.StdEncoding.DecodeString(encryptedPasswdB64)
+	if err != nil {
+		return "", err
+	}
+
+	pemBytes, err := ioutil.ReadFile(pemPath)
+	if err != nil {
+		return "", err
+	}
+
+	block, _ := pem.Decode(pemBytes)
+	var asn1Bytes []byte
+	if _, ok := block.Headers["DEK-Info"]; ok {
+		fmt.Printf("Encrypted private key. Please enter passphrase: ")
+		password, err := terminal.ReadPassword(0)
+		fmt.Printf("\n")
+		if err != nil {
+			return "", err
+		}
+
+		asn1Bytes, err = x509.DecryptPEMBlock(block, password)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		asn1Bytes = block.Bytes
+	}
+
+	key, err := x509.ParsePKCS1PrivateKey(asn1Bytes)
+	if err != nil {
+		return "", err
+	}
+
+	out, err := rsa.DecryptPKCS1v15(nil, key, encryptedPasswd)
+	return string(out), err
+}

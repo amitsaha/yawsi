@@ -2,3 +2,4 @@ vendor/
 artifacts
 yawsi
 dist
+*exe

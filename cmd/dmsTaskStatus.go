@@ -14,13 +14,23 @@
 
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
 
-var ec2Cmd = &cobra.Command{
-	Use:   "ec2",
-	Short: "Commands for working with AWS EC2",
+	"github.com/spf13/cobra"
+)
+
+var dmsTaskStatusCmd = &cobra.Command{
+	Use:   "replication-task-status",
+	Short: "Show the status for a replication task",
+	Run: func(cmd *cobra.Command, args []string) {
+
+		tasksData := getDMSReplicationTasks()
+		fmt.Printf("%v\n", tasksData)
+		displayDMSTaskStatusInteractive(tasksData)
+	},
 }
 
 func init() {
-	RootCmd.AddCommand(ec2Cmd)
+	dmsCmd.AddCommand(dmsTaskStatusCmd)
 }
