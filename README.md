@@ -5,14 +5,19 @@ subset of functionalities usually offered by AWS command line clients. It also h
 of commands directly exposing certain "workflow" scenarios that you would need to
 look up the AWS CLI manual for. 
 
+### Top reasons why you may be interested
+
 I think the commands I am most excited about are and perhaps worth your time are:
 
 - [yawsi ec2 inspect](./docs/yawsi_ec2_inspect.md)
 - [yawsi ec2 launch-more-like](./docs/yawsi_ec2_launch-more-like.md)
-- [yawsi vpc list-nacl-entries](./docs/yawsi_vpc_list-nacl-entries.md)
 
 Some of the sub-commands provide an fuzzy interactive interface making use of 
 [go-fuzzyfinder](https://github.com/ktr0731/go-fuzzyfinder) which is another feature I really like.
+
+The command [yawsi vpc list-nacl-entries](./docs/yawsi_vpc_list-nacl-entries.md) also has the capability
+to generate [Terraform]h(ttps://www.terraform.io/) code for AWS network ACL entries given an AWS network acl ID.
+I found this to be really useful when importing existing AWS NACL resources into Terraform.
 
 For a list of all the commands/sub-commands, please see [docs](./docs/yawsi.md).
 
