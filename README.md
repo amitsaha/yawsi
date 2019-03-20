@@ -50,7 +50,7 @@ Example setup:
 
 ## Building the binary
 
-You will need `go 1.11+` installed:
+You will need `go 1.12+` installed:
 
 ```
 $ make build BINARY_NAME=yawsi
