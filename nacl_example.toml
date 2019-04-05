@@ -1,0 +1,17 @@
+subnet_name = "SubnetA"
+
+[rules.101]
+egress = false
+protocol = "tcp"
+rule_action = "allow"
+cidr_block = "127.0.0.1/32"
+from_port = 22
+to_port = 30
+
+[rules.102]
+egress = true
+protocol = "tcp"
+rule_action = "allow"
+cidr_block = "127.0.0.1/32"
+from_port = 22
+to_port = 30
