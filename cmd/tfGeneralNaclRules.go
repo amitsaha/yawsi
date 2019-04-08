@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path"
 	"reflect"
@@ -16,13 +18,13 @@ var subnetName string
 
 type naclRulesSpec struct {
 	SubnetName string `toml:"subnet_name"`
-	Rules      map[string]naclRule
+	Rules      []naclRule
 }
 
 type naclRule struct {
 	NetworkACLID string `tf:"network_acl_id"`
 	Egress       bool   `toml:"egress" tf:"egress" tf_type:"bool"`
-	RuleNo       string `tf:"rule_number" tf_type:"int"`
+	RuleNo       int64  `toml:"rule_no" tf:"rule_number" tf_type:"int"`
 	RuleAction   string `toml:"rule_action" tf:"rule_action"`
 	CidrBlock    string `toml:"cidr_block" tf:"cidr_block"`
 	Protocol     string `toml:"protocol" tf:"protocol"`
@@ -30,12 +32,19 @@ type naclRule struct {
 	ToPort       int64  `toml:"to_port" tf:"to_port" tf_type:"int"`
 }
 
-func (r *naclRule) Validate() bool {
+func (r *naclRule) Validate() (bool, error) {
 	if r.RuleAction != "allow" && r.RuleAction != "deny" {
-		return false
+		return false, errors.New("Invalid rule_action specified")
+	}
+	if r.RuleNo > 32767 {
+		return false, errors.New("Rule number must be < 32767 for IPv4 addresses")
+	}
+	_, _, err := net.ParseCIDR(r.CidrBlock)
+	if err != nil {
+		return false, err
 	}
 
-	return true
+	return true, nil
 }
 
 func getResourceName(rule naclRule) string {
@@ -64,7 +73,7 @@ func renderRule(rule naclRule) string {
 	return rendered
 }
 
-func generateTfNaclRules(naclRules map[string]naclRule) {
+func generateTfNaclRules(naclRules []naclRule) {
 
 	funcMap := template.FuncMap{
 		"getResourceName": getResourceName,
@@ -75,9 +84,9 @@ func generateTfNaclRules(naclRules map[string]naclRule) {
 # This is a generated file, do not hand edit. See README at the
 # root of the repository
 
-{{ range $k, $rule := . }}resource "aws_network_acl_rule" "{{$rule | getResourceName}}" {
+{{ range . }}resource "aws_network_acl_rule" "{{. | getResourceName}}" {
 
-{{ $rule | renderRule }}
+{{ . | renderRule }}
 
 }
 {{end}}
@@ -103,7 +112,6 @@ var tfNaclCmd = &cobra.Command{
 	Use:   "generate-nacl-rules",
 	Short: "General NACL rules",
 	Run: func(cmd *cobra.Command, args []string) {
-		naclSpecPath := args[0]
 
 		var naclRules naclRulesSpec
 		if _, err := toml.DecodeFile(naclSpecPath, &naclRules); err != nil {
@@ -111,15 +119,22 @@ var tfNaclCmd = &cobra.Command{
 			return
 		}
 		subnetName = naclRules.SubnetName
-		for ruleNo, rule := range naclRules.Rules {
-			rule.NetworkACLID = fmt.Sprintf(`${lookup(local.network_acl_ids_map, "%s")}`, subnetName)
-			rule.RuleNo = ruleNo
-			naclRules.Rules[ruleNo] = rule
+		// We use the index only pattern here so that
+		// we can modify the array elements to insert the
+		// static value for NetworkAclID
+		for i := range naclRules.Rules {
+			if result, err := naclRules.Rules[i].Validate(); !result {
+				log.Fatalf("Invalid rule specification: %#v\n%v\n", naclRules.Rules[i], err)
+			}
+			naclRules.Rules[i].NetworkACLID = fmt.Sprintf(`${lookup(local.network_acl_ids_map, "%s")}`, subnetName)
 		}
 		generateTfNaclRules(naclRules.Rules)
 	},
 }
 
+var naclSpecPath string
+
 func init() {
 	tfCmd.AddCommand(tfNaclCmd)
+	tfNaclCmd.Flags().StringVarP(&naclSpecPath, "nacl-spec", "", "", "NACL TOML spec")
 }

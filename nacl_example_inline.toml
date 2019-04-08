@@ -1,5 +1,0 @@
-subnet_name = "SubnetA"
-
-rules = [
-    {egress = false, protocol = "tcp", rule_action = "allow", cidr_block = "127.0.0.1/32", from_port = 22, to_port = 30}
-]
