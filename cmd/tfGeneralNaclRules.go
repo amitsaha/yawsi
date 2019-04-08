@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"os"
 	"path"
 	"reflect"
+	"text/template"
 
 	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
@@ -75,9 +75,9 @@ func generateTfNaclRules(naclRules map[string]naclRule) {
 # This is a generated file, do not hand edit. See README at the
 # root of the repository
 
-{{range .}}resource "aws_network_acl_rule" "{{. | getResourceName}}" {
+{{ range $k, $rule := . }}resource "aws_network_acl_rule" "{{$rule | getResourceName}}" {
 
-{{ . | renderRule }}
+{{ $rule | renderRule }}
 
 }
 {{end}}
@@ -111,10 +111,10 @@ var tfNaclCmd = &cobra.Command{
 			return
 		}
 		subnetName = naclRules.SubnetName
-		for k, v := range naclRules.Rules {
-			fmt.Println(k, v)
-			v.RuleNo = k
-			fmt.Println(v)
+		for ruleNo, rule := range naclRules.Rules {
+			rule.NetworkACLID = fmt.Sprintf(`${lookup(local.network_acl_ids_map, "%s")}`, subnetName)
+			rule.RuleNo = ruleNo
+			naclRules.Rules[ruleNo] = rule
 		}
 		generateTfNaclRules(naclRules.Rules)
 	},
