@@ -4,3 +4,4 @@ yawsi
 dist
 *exe
 .terraform
+*.vscode
