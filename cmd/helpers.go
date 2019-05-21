@@ -44,7 +44,7 @@ var defaultEphermalPortRange = ec2.PortRange{
 	To:   &endingEphermalPort,
 }
 
-func createSession() *session.Session {
+func createSession(region ...string) *session.Session {
 	var sess *session.Session
 	var err error
 
@@ -56,7 +56,9 @@ func createSession() *session.Session {
 		}))
 	} else {
 		var awsRegion string
-		if os.Getenv("AWS_REGION") != "" {
+		if len(region) == 1 {
+			awsRegion = region[0]
+		} else if os.Getenv("AWS_REGION") != "" {
 			awsRegion = os.Getenv("AWS_REGION")
 		} else {
 			awsRegion = "us-east-1"

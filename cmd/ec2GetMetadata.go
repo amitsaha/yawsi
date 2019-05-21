@@ -43,6 +43,13 @@ var ec2GetMetadataCmd = &cobra.Command{
 	Short: "Get EC2 Metadata of the current instance",
 	Long:  `Get EC2 metadata`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// To get the instance details (for tags), we need to make a call to the
+		// AWS API for which we need to set a region which we can get from the
+		// metadata. However, to get the metadata, we have to set a AWS region
+		// so, here's what we will do. Set `us-east-1` in the session to get the
+		// metadata, get the AWS region from the metadata and then use the region
+		// in the API call to get the instance details
 		sess := createSession()
 		ec2MetadataSvc := ec2metadata.New(sess)
 
@@ -65,7 +72,7 @@ var ec2GetMetadataCmd = &cobra.Command{
 		md.AMI = idDoc.ImageID
 
 		// To get the name tag we have to use the AWS API
-		ec2Svc := ec2.New(createSession())
+		ec2Svc := ec2.New(createSession(md.AWSRegion))
 
 		input := &ec2.DescribeInstancesInput{
 			InstanceIds: []*string{
