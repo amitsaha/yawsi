@@ -45,14 +45,29 @@ var defaultEphermalPortRange = ec2.PortRange{
 }
 
 func createSession() *session.Session {
+	var sess *session.Session
+	var err error
+
 	profile := os.Getenv("AWS_PROFILE")
-	if profile == "" {
-		log.Fatal("Must specify AWS_PROFILE")
+	if len(profile) != 0 {
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			SharedConfigState: session.SharedConfigEnable,
+			Profile:           profile,
+		}))
+	} else {
+		var awsRegion string
+		if os.Getenv("AWS_REGION") != "" {
+			awsRegion = os.Getenv("AWS_REGION")
+		} else {
+			awsRegion = "us-east-1"
+		}
+		sess, err = session.NewSession(&aws.Config{
+			Region: aws.String(awsRegion),
+		})
+		if err != nil {
+			log.Fatal("Couldn't create a session to talk to AWS", err.Error())
+		}
 	}
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-		Profile:           profile,
-	}))
 	return sess
 }
 
