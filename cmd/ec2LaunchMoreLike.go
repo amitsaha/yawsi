@@ -29,7 +29,7 @@ import (
 // launchMoreLikeCmd represents the launchMoreLike command
 var launchMoreLikeCmd = &cobra.Command{
 	Use:   "launch-more-like",
-	Short: "Launch AWS EC2 classic instance like another instance",
+	Short: "Launch more AWS EC2 instance like another instance",
 	Long:  `launch-more-like creates another AWS instance given another instance id`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cloneInstanceID := args[0]
@@ -56,13 +56,15 @@ var launchMoreLikeCmd = &cobra.Command{
 		}
 		instance := instancesOutput.Reservations[0].Instances[0]
 
-		iamInstanceProfileSpec := &ec2.IamInstanceProfileSpecification{
-			Arn: instance.IamInstanceProfile.Arn,
+		var iamInstanceProfileSpec *ec2.IamInstanceProfileSpecification
+
+		if instance.IamInstanceProfile != nil {
+			iamInstanceProfileSpec.Arn = instance.IamInstanceProfile.Arn
 		}
 
-		var securityGroups []*string
+		var securityGroupIds []*string
 		for _, sg := range instance.SecurityGroups {
-			securityGroups = append(securityGroups, sg.GroupName)
+			securityGroupIds = append(securityGroupIds, sg.GroupId)
 		}
 		input := &ec2.DescribeInstanceAttributeInput{
 			Attribute:  aws.String("userData"),
@@ -127,15 +129,28 @@ var launchMoreLikeCmd = &cobra.Command{
 			userData = result.UserData.Value
 		}
 
+		var imageID string
+		if len(updatedAMI) > 0 {
+			imageID = updatedAMI
+		} else {
+			updatedAMI = *instance.ImageId
+		}
+
 		launchParams := &ec2.RunInstancesInput{
-			ImageId:            aws.String(*instance.ImageId),
+			ImageId:            aws.String(imageID),
 			InstanceType:       aws.String(*instance.InstanceType),
 			MinCount:           aws.Int64(1),
 			MaxCount:           aws.Int64(1),
 			IamInstanceProfile: iamInstanceProfileSpec,
-			SecurityGroups:     securityGroups,
+			SecurityGroupIds:   securityGroupIds,
 			UserData:           userData,
 		}
+
+		if len(*instance.SubnetId) > 0 {
+			launchParams.SubnetId = instance.SubnetId
+		}
+
+		log.Printf("Launching instance with %#v\n", launchParams)
 		runResult, err := svc.RunInstances(launchParams)
 		if err != nil {
 			log.Fatal("Could not create instance", err)
@@ -159,10 +174,12 @@ var launchMoreLikeCmd = &cobra.Command{
 
 var editUserData bool
 var updateTags string
+var updatedAMI string
 
 func init() {
 	ec2Cmd.AddCommand(launchMoreLikeCmd)
-	launchMoreLikeCmd.Flags().BoolVarP(&editUserData, "edit-user-data", "e", false, "Edit User Data")
-	launchMoreLikeCmd.Flags().StringVarP(&updateTags, "update-tags", "u", "", "Add/update tags")
+	launchMoreLikeCmd.Flags().BoolVarP(&editUserData, "edit-user-data", "", false, "Edit User Data")
+	launchMoreLikeCmd.Flags().StringVarP(&updateTags, "update-tags", "", "", "Add/update tags")
+	launchMoreLikeCmd.Flags().StringVarP(&updatedAMI, "ami-id", "", "", "Use a different AMI")
 
 }
