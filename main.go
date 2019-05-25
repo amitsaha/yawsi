@@ -14,12 +14,14 @@
 
 package main
 
-import "os"
-import "fmt"
-import "github.com/amitsaha/yawsi/cmd"
-import "strings"
+import (
+	"fmt"
+	"os"
+	"strings"
 
-import "github.com/spf13/pflag"
+	"github.com/amitsaha/yawsi/cmd"
+	"github.com/spf13/pflag"
+)
 
 func nonCompletableFlag(flag *pflag.Flag) bool {
 	return flag.Hidden || len(flag.Deprecated) > 0
@@ -28,75 +30,54 @@ func nonCompletableFlag(flag *pflag.Flag) bool {
 func main() {
 	if len(os.Getenv("COMP_LINE")) != 0 {
 		if len(os.Getenv("COMP_DEBUG")) != 0 {
-			fmt.Printf("%#v\n", os.Args[1:])
-			fmt.Printf("%#v\n", os.Getenv("COMP_LINE"))
+			//fmt.Printf("%#v\n", os.Args[1:])
+			//fmt.Printf("%#v\n", os.Getenv("COMP_LINE"))
 		}
-		// whose commands is being completed
-		if os.Args[1] == "yawsi" {
-			// no sub-commands yet: yawsi <TAB>
-			if os.Args[2] == "" && os.Args[3] == "yawsi" {
-				for _, cmd := range cmd.RootCmd.Commands() {
-					fmt.Printf("%s\n", cmd.Use)
-				}
+		compLine := strings.Split(os.Getenv("COMP_LINE"), " ")
+		if compLine[0] == "yawsi" {
+			var cmdArgs []string
+			if len(compLine) > 1 {
+				cmdArgs = compLine[1:]
+			} else {
+				cmdArgs = compLine[0:]
+			}
+			c, _, _ := cmd.RootCmd.Find(cmdArgs)
+			suggestions := c.SuggestionsFor(cmdArgs[len(cmdArgs)-1])
+			for _, s := range suggestions {
+				fmt.Printf("%s\n", s)
 			}
 
-			// yawsi <valid-subcommand1 > <valid-subcommand2> .. <TAB>
-			if len(os.Args[2]) == 0 && len(os.Args[3]) != 0 && os.Args[3] != "yawsi" {
-				// sub-command with sub-commands
-				for _, cmd := range cmd.RootCmd.Commands() {
-					if cmd.Use == os.Args[3] {
-						for _, cmd := range cmd.Commands() {
-							fmt.Printf("%s\n", cmd.Use)
-						}
-						for _, arg := range cmd.ValidArgs {
-							fmt.Printf("%s\n", arg)
-						}
-						localNonPersistentFlags := cmd.LocalNonPersistentFlags()
-						cmd.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {
-							if nonCompletableFlag(flag) {
-								return
-							}
-							fmt.Printf("%v\n", flag.Name)
-
-							/*if len(flag.Shorthand) > 0 {
-								writeShortFlag(buf, flag, cmd)
-							}*/
-							if localNonPersistentFlags.Lookup(flag.Name) != nil {
-								fmt.Printf("%s\n", flag.Name)
-							}
-						})
-						cmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
-							if nonCompletableFlag(flag) {
-								return
-							}
-							fmt.Printf("%v\n", flag.Name)
-							if len(flag.Shorthand) > 0 {
-								fmt.Printf("%v\n", flag.Name)
-							}
-						})
-
+			localNonPersistentFlags := c.LocalNonPersistentFlags()
+			c.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {
+				if nonCompletableFlag(flag) {
+					return
+				}
+				if strings.HasPrefix(fmt.Sprintf("--%s", flag.Name), cmdArgs[len(cmdArgs)-1]) {
+					fmt.Printf("--%s\n", flag.Name)
+				}
+				if localNonPersistentFlags.Lookup(flag.Name) != nil {
+					if strings.HasPrefix(fmt.Sprintf("--%s", flag.Name), cmdArgs[len(cmdArgs)-1]) {
+						fmt.Printf("--%s\n", flag.Name)
 					}
 				}
+			})
 
-			}
-			// yawsi <valid-subcommand> <valid-subcommand/arg><TAB>
-			if len(os.Args[2]) != 0 && len(os.Args[3]) != 0 && os.Args[3] != "yawsi" {
-				for _, cmd := range cmd.RootCmd.Commands() {
-					if cmd.Use == os.Args[3] {
-						for _, cmd := range cmd.Commands() {
-							if strings.HasPrefix(cmd.Use, os.Args[2]) || os.Args[2] == cmd.Use {
-								fmt.Printf("%s\n", cmd.Use)
-							}
-						}
-						for _, arg := range cmd.ValidArgs {
-							fmt.Printf("%s\n", arg)
-						}
-
+			c.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
+				if nonCompletableFlag(flag) {
+					return
+				}
+				if strings.HasPrefix(flag.Name, cmdArgs[len(cmdArgs)-1]) {
+					fmt.Printf("--%s\n", flag.Name)
+				}
+				if len(flag.Shorthand) > 0 {
+					if strings.HasPrefix(flag.Name, cmdArgs[len(cmdArgs)-1]) {
+						fmt.Printf("--%s\n", flag.Name)
 					}
 				}
-			}
+			})
 
 		}
+
 	} else {
 		cmd.Execute()
 	}
