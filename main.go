@@ -23,17 +23,22 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// Function copied from github.com/spf13/cobra
 func nonCompletableFlag(flag *pflag.Flag) bool {
 	return flag.Hidden || len(flag.Deprecated) > 0
 }
 
 func main() {
+	// handle bash autocomplete
 	if len(os.Getenv("COMP_LINE")) != 0 {
 		if len(os.Getenv("COMP_DEBUG")) != 0 {
 			fmt.Printf("%#v\n", os.Getenv("COMP_LINE"))
 		}
 		compLine := strings.Split(os.Getenv("COMP_LINE"), " ")
-		if compLine[0] == "yawsi" {
+
+		// we only handle auto complete, if we are the command
+		// being invoked
+		if compLine[0] == cmd.RootCmd.Name() {
 			var cmdArgs []string
 			if len(compLine) > 1 {
 				cmdArgs = compLine[1:]
