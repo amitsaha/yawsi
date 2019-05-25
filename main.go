@@ -30,8 +30,7 @@ func nonCompletableFlag(flag *pflag.Flag) bool {
 func main() {
 	if len(os.Getenv("COMP_LINE")) != 0 {
 		if len(os.Getenv("COMP_DEBUG")) != 0 {
-			//fmt.Printf("%#v\n", os.Args[1:])
-			//fmt.Printf("%#v\n", os.Getenv("COMP_LINE"))
+			fmt.Printf("%#v\n", os.Getenv("COMP_LINE"))
 		}
 		compLine := strings.Split(os.Getenv("COMP_LINE"), " ")
 		if compLine[0] == "yawsi" {
