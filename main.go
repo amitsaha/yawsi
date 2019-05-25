@@ -19,10 +19,17 @@ import "fmt"
 import "github.com/amitsaha/yawsi/cmd"
 import "strings"
 
+import "github.com/spf13/pflag"
+
+func nonCompletableFlag(flag *pflag.Flag) bool {
+	return flag.Hidden || len(flag.Deprecated) > 0
+}
+
 func main() {
 	if len(os.Getenv("COMP_LINE")) != 0 {
 		if len(os.Getenv("COMP_DEBUG")) != 0 {
 			fmt.Printf("%#v\n", os.Args[1:])
+			fmt.Printf("%#v\n", os.Getenv("COMP_LINE"))
 		}
 		// whose commands is being completed
 		if os.Args[1] == "yawsi" {
@@ -33,8 +40,9 @@ func main() {
 				}
 			}
 
-			// yawsi <valid-subcommand> <TAB>
+			// yawsi <valid-subcommand1 > <valid-subcommand2> .. <TAB>
 			if len(os.Args[2]) == 0 && len(os.Args[3]) != 0 && os.Args[3] != "yawsi" {
+				// sub-command with sub-commands
 				for _, cmd := range cmd.RootCmd.Commands() {
 					if cmd.Use == os.Args[3] {
 						for _, cmd := range cmd.Commands() {
@@ -43,11 +51,33 @@ func main() {
 						for _, arg := range cmd.ValidArgs {
 							fmt.Printf("%s\n", arg)
 						}
-						flags := cmd.NonInheritedFlags()
-                                                fmt.Printf("Flags: %#v\n", flags)
+						localNonPersistentFlags := cmd.LocalNonPersistentFlags()
+						cmd.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {
+							if nonCompletableFlag(flag) {
+								return
+							}
+							fmt.Printf("%v\n", flag.Name)
+
+							/*if len(flag.Shorthand) > 0 {
+								writeShortFlag(buf, flag, cmd)
+							}*/
+							if localNonPersistentFlags.Lookup(flag.Name) != nil {
+								fmt.Printf("%s\n", flag.Name)
+							}
+						})
+						cmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
+							if nonCompletableFlag(flag) {
+								return
+							}
+							fmt.Printf("%v\n", flag.Name)
+							if len(flag.Shorthand) > 0 {
+								fmt.Printf("%v\n", flag.Name)
+							}
+						})
 
 					}
 				}
+
 			}
 			// yawsi <valid-subcommand> <valid-subcommand/arg><TAB>
 			if len(os.Args[2]) != 0 && len(os.Args[3]) != 0 && os.Args[3] != "yawsi" {
