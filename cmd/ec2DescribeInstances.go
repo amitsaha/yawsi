@@ -17,10 +17,12 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
+	"text/template"
 	"time"
 
-	"github.com/fatih/color"
 	fuzzyfinder "github.com/ktr0731/go-fuzzyfinder"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -30,24 +32,42 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func displayFixedInstanceDetails(instanceData []*instanceState) {
+type listInstanceData struct {
+	Uptime time.Duration
+	Name   string
+	instanceState
+}
 
-	for _, instance := range instanceData {
+func displayFixedInstanceDetails(instancesData ...*instanceState) {
+
+	tmpl := template.New("fixedEC2InstanceDetails")
+
+	tmpl, err := tmpl.Parse(listInstancesFormat)
+	if err != nil {
+		log.Fatal("Error Parsing template: ", err)
+		return
+	}
+
+	for _, instance := range instancesData {
+
+		d := listInstanceData{}
 		now := time.Now()
-		uptime := now.Sub(*instance.LaunchTime)
-
-		red := color.New(color.FgRed)
-		boldRed := red.Add(color.Bold)
-
-		instanceName := ""
+		d.Uptime = now.Sub(*instance.LaunchTime)
 
 		for _, tag := range instance.Tags {
 			if *tag.Key == "Name" {
-				instanceName = *tag.Value
+				d.Name = *tag.Value
 			}
 		}
 
-		boldRed.Println(instance.InstanceId, ":", instanceName, ":", instance.PrivateIPAddresses, ":", instance.State, ":", uptime)
+		d.instanceState = *instance
+
+		err1 := tmpl.Execute(os.Stdout, d)
+		if err1 != nil {
+			log.Fatal("Error executing template: ", err1)
+
+		}
+		fmt.Println()
 	}
 }
 
@@ -60,6 +80,29 @@ var describeInstancesCmd = &cobra.Command{
 		var ec2Filters []*ec2.Filter
 		var inputInstanceIds []*string
 		var inputInstanceIdsMap = make(map[string]bool)
+
+		if listInstancesFormatHelp {
+			fmt.Print("Available format fields:\n\n")
+			instanceData := listInstanceData{}
+			instanceState := instanceState{}
+
+			s := reflect.ValueOf(&instanceData).Elem()
+			typeOfT := s.Type()
+			for i := 0; i < s.NumField(); i++ {
+				if typeOfT.Field(i).Name != "instanceState" {
+					fmt.Printf("%s \n", typeOfT.Field(i).Name)
+				}
+			}
+
+			s = reflect.ValueOf(&instanceState).Elem()
+			typeOfT = s.Type()
+			for i := 0; i < s.NumField(); i++ {
+				fmt.Printf("%s \n", typeOfT.Field(i).Name)
+			}
+
+			fmt.Println()
+			os.Exit(0)
+		}
 
 		if len(instanceIds) != 0 {
 			instances := strings.Split(instanceIds, ",")
@@ -106,7 +149,7 @@ var describeInstancesCmd = &cobra.Command{
 		if len(asgName) == 0 {
 			instancesData := getEC2InstanceData(ec2Filters, inputInstanceIds...)
 			if listInstances {
-				displayFixedInstanceDetails(instancesData)
+				displayFixedInstanceDetails(instancesData...)
 			} else {
 				displayEC2Interactive(instancesData)
 			}
@@ -187,6 +230,8 @@ var describeInstancesCmd = &cobra.Command{
 	},
 }
 
+var listInstancesFormat string
+var listInstancesFormatHelp bool
 var listInstances bool
 var tags string
 var asgName string
@@ -195,7 +240,10 @@ var instanceAsgFilter bool
 
 func init() {
 	ec2Cmd.AddCommand(describeInstancesCmd)
+
 	describeInstancesCmd.Flags().BoolVarP(&listInstances, "list", "", false, "List instances")
+	describeInstancesCmd.Flags().StringVarP(&listInstancesFormat, "list-format", "", "{{.Name}} {{.Uptime}} {{.PrivateIPAddresses}}", "List instances format string")
+	describeInstancesCmd.Flags().BoolVarP(&listInstancesFormatHelp, "list-format-help", "", false, "List all valid format fields")
 	describeInstancesCmd.Flags().StringVarP(&instanceIds, "instance-id", "i", "", "Show details of the specified instance(s) (Example: i-a121aas, i=1212aa)")
 	describeInstancesCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
 	describeInstancesCmd.Flags().StringVarP(&asgName, "asg", "a", "", "List instances attached to this ASG")

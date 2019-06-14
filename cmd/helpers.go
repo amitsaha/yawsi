@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+
 	"runtime"
 	"time"
 
@@ -550,7 +551,8 @@ func getAutoScalingGroups(params *autoscaling.DescribeAutoScalingGroupsInput) []
 }
 
 func displayEC2Interactive(instanceData []*instanceState) {
-	_ = selectEC2InstanceInteractive(instanceData)
+	selectedData := selectEC2InstanceInteractive(instanceData)
+	displayFixedInstanceDetails(selectedData)
 }
 
 func selectEC2InstanceInteractive(instanceData []*instanceState) *instanceState {
