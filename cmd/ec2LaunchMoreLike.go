@@ -133,7 +133,7 @@ var launchMoreLikeCmd = &cobra.Command{
 		if len(updatedAMI) > 0 {
 			imageID = updatedAMI
 		} else {
-			updatedAMI = *instance.ImageId
+			imageID = *instance.ImageId
 		}
 
 		launchParams := &ec2.RunInstancesInput{
