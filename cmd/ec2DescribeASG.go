@@ -18,112 +18,117 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"text/template"
-	"time"
 
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	fuzzyfinder "github.com/ktr0731/go-fuzzyfinder"
 	"github.com/spf13/cobra"
 )
 
-type listASGData struct {
-	Created time.Time
-	Name    string
+// listInstancesCmd represents the listInstances command
+var describeASGsCmd = &cobra.Command{
+	Use:   "describe-asgs",
+	Short: "Describe ASGs",
+	Long:  `Describe auto scaling groups with interactive selection.`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if listASGsFormatHelp {
+			fmt.Print("Available format fields:\n\nTODO")
+			asg := autoscaling.Group{}
+
+			s := reflect.ValueOf(&asg).Elem()
+			typeOfT := s.Type()
+			for i := 0; i < s.NumField(); i++ {
+				fmt.Printf("%s \n", typeOfT.Field(i).Name)
+			}
+
+			fmt.Println()
+			os.Exit(0)
+		}
+
+		// Default to 100 here, not sure how this works
+		// with paging when we have  more than 100 ASGs
+		maxSize := int64(5)
+		params := &autoscaling.DescribeAutoScalingGroupsInput{
+			MaxRecords: &maxSize,
+		}
+		var asgs autoscalingGroups = getAutoScalingGroups(params)
+		selectMulti(asgs)
+	},
 }
 
-func displayFixedASGDetails(asgsData ...*autoscaling.Group) {
+type autoscalingGroups []*autoscaling.Group
 
+func (asgs autoscalingGroups) Summary(i int) string {
+	return fmt.Sprintf("[%s]", *asgs[i].AutoScalingGroupName)
+}
+
+func (asgs autoscalingGroups) Output(idxs ...int) {
 	tmpl := template.New("fixedEC2ASGDetails")
-
 	tmpl, err := tmpl.Parse(listASGsFormat)
 	if err != nil {
 		log.Fatal("Error Parsing template: ", err)
 		return
 	}
 
-	for _, asg := range asgsData {
-
-		d := listASGData{}
-		d.Created = *asg.CreatedTime
-		d.Name = *asg.AutoScalingGroupName
-
-		err1 := tmpl.Execute(os.Stdout, d)
+	for _, i := range idxs {
+		err1 := tmpl.Execute(os.Stdout, *asgs[i])
 		if err1 != nil {
 			log.Fatal("Error executing template: ", err1)
-
 		}
 		fmt.Println()
 	}
 }
 
-// listInstancesCmd represents the listInstances command
-var describeASGsCmd = &cobra.Command{
-	Use:   "describe-asgs",
-	Short: "Describe ASGs",
-	Long:  `Describe auto scaling groups. Filter by tags (tag1:value1, tag2:value2), auto scaling group, interactive selection and more`,
-	Run: func(cmd *cobra.Command, args []string) {
+func (asgs autoscalingGroups) Details(i int) string {
+	tags := "Tags:\n"
+	d := asgs[i]
+	for _, tag := range d.Tags {
+		tags = tags + fmt.Sprintf("  %s: %s\n", *tag.Key, *tag.Value)
+	}
 
-		if listASGsFormatHelp {
-			fmt.Print("Available format fields:\n\nTODO")
-			fmt.Println()
-			os.Exit(0)
-		}
+	instances := "Instances:\n"
+	for _, instance := range d.Instances {
+		instances = instances + fmt.Sprintf("  %s\n", *instance.InstanceId)
+	}
 
-		// Not filtering by ASG name
-		if len(asgName) == 0 {
-			// Default to 100 here, not sure how this works
-			// with paging when we have  more than 100 ASGs
-			maxSize := int64(100)
-			params := &autoscaling.DescribeAutoScalingGroupsInput{
-				MaxRecords: &maxSize,
-			}
-			asgsData := getAutoScalingGroups(params)
-			//log.Printf("%v\n", autoScalingGroups)
-
-			displayEC2InteractiveASG(asgsData)
-		}
-	},
+	return fmt.Sprintf("Name: %s\nARN: %s\nVPCZoneIdentifiers: %s\nCreated: %s\n\nDesired Capacity: %d\nMaxSize: %d\nMinSize: %d\n\n%s\n%s",
+		*d.AutoScalingGroupName,
+		*d.AutoScalingGroupARN,
+		*d.VPCZoneIdentifier,
+		*d.CreatedTime,
+		*d.DesiredCapacity,
+		*d.MaxSize,
+		*d.MinSize,
+		tags,
+		instances,
+	)
 }
 
-func displayEC2InteractiveASG(asgsData []*autoscaling.Group) {
-	selectedData := selectEC2ASGInteractive(asgsData)
-	displayFixedASGDetails(selectedData)
+type Selectable interface {
+	// Summary to display for a selectable item
+	Summary(int) string
+	// Details/Preview to display for a selectable item
+	Details(int) string
+	// Results to return when an item a selected
+	Output(...int)
 }
 
-func selectEC2ASGInteractive(asgData []*autoscaling.Group) *autoscaling.Group {
-
-	idx, _ := fuzzyfinder.Find(asgData,
-		func(i int) string {
-			return fmt.Sprintf("[%s]", *asgData[i].AutoScalingGroupName)
-		},
+func selectMulti(data Selectable) {
+	indices, err := fuzzyfinder.FindMulti(
+		data,
+		data.Summary,
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 			if i == -1 {
 				return ""
 			}
-
-			tags := "Tags:\n"
-			for _, tag := range asgData[i].Tags {
-				tags = tags + fmt.Sprintf("  %s: %s\n", *tag.Key, *tag.Value)
-			}
-
-			instances := "Instances:\n"
-			for _, instance := range asgData[i].Instances {
-				instances = instances + fmt.Sprintf("  %s\n", *instance.InstanceId)
-			}
-
-			return fmt.Sprintf("Name: %s\nARN: %s\nVPCZoneIdentifiers: %s\nCreated: %s\n\nDesired Capacity: %d\nMaxSize: %d\nMinSize: %d\n\n%s\n%s",
-				*asgData[i].AutoScalingGroupName,
-				*asgData[i].AutoScalingGroupARN,
-				*asgData[i].VPCZoneIdentifier,
-				*asgData[i].CreatedTime,
-				*asgData[i].DesiredCapacity,
-				*asgData[i].MaxSize,
-				*asgData[i].MinSize,
-				tags,
-				instances,
-			)
+			return data.Details(i)
 		}))
-	return asgData[idx]
+	if err != nil {
+		panic(err)
+	}
+	data.Output(indices...)
 }
 
 var listASGsFormat string
@@ -131,5 +136,6 @@ var listASGsFormatHelp bool
 
 func init() {
 	ec2Cmd.AddCommand(describeASGsCmd)
-	describeASGsCmd.Flags().StringVarP(&listASGsFormat, "list-format", "", "[{{.Name}}] : {{.Created}}", "List ASGs format string")
+	describeASGsCmd.Flags().StringVarP(&listASGsFormat, "list-format", "", "[{{.AutoScalingGroupName}}] : {{.CreatedTime}}", "List ASGs format string")
+	describeASGsCmd.Flags().BoolVarP(&listASGsFormatHelp, "list-format-help", "", false, "List all valid format fields")
 }

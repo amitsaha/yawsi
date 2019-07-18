@@ -22,6 +22,8 @@ github.com/jtolds/gls v4.2.1+incompatible h1:fSuqC+Gmlu6l/ZYAoZzx2pyucC8Xza35fpR
 github.com/jtolds/gls v4.2.1+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/ktr0731/go-fuzzyfinder v0.1.1 h1:CCpgHCVTthC2XWm2i4gM96GeCyxUIuokcW65QkXTq0M=
 github.com/ktr0731/go-fuzzyfinder v0.1.1/go.mod h1:RzAqRU8h8f4uSLSP+THd87krOFnBploGlGn/8RQhd7M=
+github.com/ktr0731/go-fuzzyfinder v0.1.2 h1:Y+Vm86X/QmE/+DitA2RrLndZU134cZtBUOtO18CTVcE=
+github.com/ktr0731/go-fuzzyfinder v0.1.2/go.mod h1:RzAqRU8h8f4uSLSP+THd87krOFnBploGlGn/8RQhd7M=
 github.com/mattn/go-colorable v0.0.9 h1:UVL0vNpWh04HeJXV0KLcaT7r06gOH2l4OW6ddYRUIY4=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
 github.com/mattn/go-isatty v0.0.4 h1:bnP0vzxcAdeI1zdubAl5PjU6zsERjGZb7raWodagDYs=

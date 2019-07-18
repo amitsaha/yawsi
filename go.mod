@@ -10,7 +10,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
-	github.com/ktr0731/go-fuzzyfinder v0.1.1
+	github.com/ktr0731/go-fuzzyfinder v0.1.2
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/pelletier/go-toml v1.3.0
