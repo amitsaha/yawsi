@@ -16,11 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-	fuzzyfinder "github.com/ktr0731/go-fuzzyfinder"
 
 	"strings"
 
@@ -87,40 +83,6 @@ func displaySubnetDetails(ec2 *ec2.EC2, subnets []*ec2.Subnet) {
 	}
 	fmt.Fprintln(w)
 	w.Flush()
-}
-
-func selectVPCInteractive() string {
-
-	svc := ec2.New(session.New())
-	input := &ec2.DescribeVpcsInput{}
-
-	result, err := svc.DescribeVpcs(input)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	idx, _ := fuzzyfinder.Find(result.Vpcs,
-		func(i int) string {
-			return fmt.Sprintf("%s", *result.Vpcs[i].VpcId)
-		},
-		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
-			if i == -1 {
-				return ""
-			}
-
-			vpcName := ""
-			for _, tag := range result.Vpcs[i].Tags {
-				if *tag.Key == "Name" {
-					vpcName = *tag.Value
-				}
-			}
-			return fmt.Sprintf("Vpc: %s (%s) \nCIDR block: %s\n",
-				vpcName,
-				*result.Vpcs[i].VpcId,
-				*result.Vpcs[i].CidrBlock,
-			)
-		}))
-	return *result.Vpcs[idx].VpcId
 }
 
 // listAsgCmd represents the listAsg command
