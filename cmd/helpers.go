@@ -596,6 +596,30 @@ func getVpcs() *ec2.DescribeVpcsOutput {
 	}
 	return result
 }
+
+func getSubnets(input *ec2.DescribeSubnetsInput) []*ec2.Subnet {
+	var subnets []*ec2.Subnet
+	sess := createSession()
+	svc := ec2.New(sess)
+	result, err := svc.DescribeSubnets(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+	} else {
+		subnets = result.Subnets
+	}
+
+	return subnets
+}
+
 func selectVPCInteractive() string {
 
 	result := getVpcs()
@@ -625,7 +649,7 @@ func selectVPCInteractive() string {
 }
 
 func displayVPCDetails() {
-	var subnets string
+	var subnetDetails string
 	result := getVpcs()
 	_, _ = fuzzyfinder.Find(result.Vpcs,
 		func(i int) string {
@@ -653,27 +677,11 @@ func displayVPCDetails() {
 				},
 			}
 
-			sess := createSession()
-			svc := ec2.New(sess)
-			subnetsResult, err := svc.DescribeSubnets(input)
-			if err != nil {
-				if aerr, ok := err.(awserr.Error); ok {
-					switch aerr.Code() {
-					default:
-						fmt.Println(aerr.Error())
-					}
-				} else {
-					// Print the error, cast err to awserr.Error to get the Code and
-					// Message from an error.
-					fmt.Println(err.Error())
-				}
-			} else {
-
-				for _, subnet := range subnetsResult.Subnets {
-					subnets += fmt.Sprintf("%s (%s) - %s - %s\n", getSubnetName(subnet.Tags), getSubnetType(subnet.SubnetId), *subnet.SubnetId, *subnet.CidrBlock)
-
-				}
+			subnets := getSubnets(input)
+			for _, subnet := range subnets {
+				subnetDetails += fmt.Sprintf("%s (%s) - %s - %s\n", getSubnetName(subnet.Tags), getSubnetType(subnet.SubnetId), *subnet.SubnetId, *subnet.CidrBlock)
 			}
+
 			return fmt.Sprintf("Vpc: %s (%s) \nCIDR block: %s\nDefault: %v\n\nSubnets:\n\n%s\n",
 				vpcName,
 				*result.Vpcs[i].VpcId,

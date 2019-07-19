@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/spf13/cobra"
 
@@ -66,7 +65,7 @@ func getAdditionalTagsAsString(tags []*ec2.Tag) string {
 	}
 	return tagsStr
 }
-func displaySubnetDetails(ec2 *ec2.EC2, subnets []*ec2.Subnet) {
+func displaySubnetDetails(subnets []*ec2.Subnet) {
 	w := new(tabwriter.Writer)
 
 	// Format in tab-separated columns with a tab stop of 8.
@@ -104,23 +103,8 @@ var listSubnetsCmd = &cobra.Command{
 			},
 		}
 
-		sess := createSession()
-		svc := ec2.New(sess)
-		result, err := svc.DescribeSubnets(input)
-		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				default:
-					fmt.Println(aerr.Error())
-				}
-			} else {
-				// Print the error, cast err to awserr.Error to get the Code and
-				// Message from an error.
-				fmt.Println(err.Error())
-			}
-		} else {
-			displaySubnetDetails(svc, result.Subnets)
-		}
+		subnets := getSubnets(input)
+		displaySubnetDetails(subnets)
 	},
 }
 
