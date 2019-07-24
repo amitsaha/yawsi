@@ -16,16 +16,11 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-	fuzzyfinder "github.com/ktr0731/go-fuzzyfinder"
 
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/spf13/cobra"
 
@@ -58,7 +53,7 @@ func getSubnetName(tags []*ec2.Tag) string {
 			return *tag.Value
 		}
 	}
-	return ""
+	return "Subnet Name"
 }
 
 func getAdditionalTagsAsString(tags []*ec2.Tag) string {
@@ -70,7 +65,7 @@ func getAdditionalTagsAsString(tags []*ec2.Tag) string {
 	}
 	return tagsStr
 }
-func displaySubnetDetails(ec2 *ec2.EC2, subnets []*ec2.Subnet) {
+func displaySubnetDetails(subnets []*ec2.Subnet) {
 	w := new(tabwriter.Writer)
 
 	// Format in tab-separated columns with a tab stop of 8.
@@ -89,44 +84,20 @@ func displaySubnetDetails(ec2 *ec2.EC2, subnets []*ec2.Subnet) {
 	w.Flush()
 }
 
-func selectVPCInteractive() string {
-
-	svc := ec2.New(session.New())
-	input := &ec2.DescribeVpcsInput{}
-
-	result, err := svc.DescribeVpcs(input)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	idx, _ := fuzzyfinder.Find(result.Vpcs,
-		func(i int) string {
-			return fmt.Sprintf("%s", *result.Vpcs[i].VpcId)
-		},
-		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
-			if i == -1 {
-				return ""
-			}
-
-			vpcName := ""
-			for _, tag := range result.Vpcs[i].Tags {
-				if *tag.Key == "Name" {
-					vpcName = *tag.Value
-				}
-			}
-			return fmt.Sprintf("Vpc: %s (%s) \nCIDR block: %s\n",
-				vpcName,
-				*result.Vpcs[i].VpcId,
-				*result.Vpcs[i].CidrBlock,
-			)
-		}))
-	return *result.Vpcs[idx].VpcId
-}
-
 // listAsgCmd represents the listAsg command
 var listSubnetsCmd = &cobra.Command{
 	Use:   "list-subnets",
 	Short: "List Subnets in a VPC",
+	Long: `List the subnets in a specific vpc
+	
+	To list the subnets in a VPC selected interactively:
+
+		$ yawsi vpc list-subnets
+		
+	To list subnets in a specific VPC:
+
+	    $ yawsi vpc list-subnets --vpc-id <vpc-id>	
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(vpcId) == 0 {
 			vpcId = selectVPCInteractive()
@@ -142,23 +113,8 @@ var listSubnetsCmd = &cobra.Command{
 			},
 		}
 
-		sess := createSession()
-		svc := ec2.New(sess)
-		result, err := svc.DescribeSubnets(input)
-		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				default:
-					fmt.Println(aerr.Error())
-				}
-			} else {
-				// Print the error, cast err to awserr.Error to get the Code and
-				// Message from an error.
-				fmt.Println(err.Error())
-			}
-		} else {
-			displaySubnetDetails(svc, result.Subnets)
-		}
+		subnets := getSubnets(input)
+		displaySubnetDetails(subnets)
 	},
 }
 

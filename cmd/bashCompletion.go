@@ -22,5 +22,5 @@ To configure your bash shell to load completions for each session add to your ba
 }
 
 func init() {
-    RootCmd.AddCommand(bashCompletionCmd)
+	RootCmd.AddCommand(bashCompletionCmd)
 }

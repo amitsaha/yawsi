@@ -586,6 +586,113 @@ func selectEC2InstanceInteractive(instanceData []*instanceState) *instanceState 
 	return instanceData[idx]
 }
 
+func getVpcs() *ec2.DescribeVpcsOutput {
+	svc := ec2.New(session.New())
+	input := &ec2.DescribeVpcsInput{}
+
+	result, err := svc.DescribeVpcs(input)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return result
+}
+
+func getSubnets(input *ec2.DescribeSubnetsInput) []*ec2.Subnet {
+	var subnets []*ec2.Subnet
+	sess := createSession()
+	svc := ec2.New(sess)
+	result, err := svc.DescribeSubnets(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+	} else {
+		subnets = result.Subnets
+	}
+
+	return subnets
+}
+
+func selectVPCInteractive() string {
+
+	result := getVpcs()
+	idx, _ := fuzzyfinder.Find(result.Vpcs,
+		func(i int) string {
+			return fmt.Sprintf("%s", *result.Vpcs[i].VpcId)
+		},
+		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+			if i == -1 {
+				return ""
+			}
+
+			vpcName := ""
+			for _, tag := range result.Vpcs[i].Tags {
+				if *tag.Key == "Name" {
+					vpcName = *tag.Value
+				}
+			}
+			return fmt.Sprintf("Vpc: %s (%s) \nCIDR block: %s\nDefault: %v",
+				vpcName,
+				*result.Vpcs[i].VpcId,
+				*result.Vpcs[i].CidrBlock,
+				*result.Vpcs[i].IsDefault,
+			)
+		}))
+	return *result.Vpcs[idx].VpcId
+}
+
+func displayVPCDetails() {
+	var subnetDetails string
+	result := getVpcs()
+	_, _ = fuzzyfinder.Find(result.Vpcs,
+		func(i int) string {
+			return fmt.Sprintf("%s", *result.Vpcs[i].VpcId)
+		},
+		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+			if i == -1 {
+				return ""
+			}
+
+			vpcName := ""
+			for _, tag := range result.Vpcs[i].Tags {
+				if *tag.Key == "Name" {
+					vpcName = *tag.Value
+				}
+			}
+			input := &ec2.DescribeSubnetsInput{
+				Filters: []*ec2.Filter{
+					{
+						Name: aws.String("vpc-id"),
+						Values: []*string{
+							aws.String(*result.Vpcs[i].VpcId),
+						},
+					},
+				},
+			}
+
+			subnets := getSubnets(input)
+			subnetDetails = ""
+			for _, subnet := range subnets {
+				subnetDetails += fmt.Sprintf("%s (%s) - %s - %s\n", getSubnetName(subnet.Tags), getSubnetType(subnet.SubnetId), *subnet.SubnetId, *subnet.CidrBlock)
+			}
+
+			return fmt.Sprintf("Vpc: %s (%s) \nCIDR block: %s\nDefault: %v\n\nSubnets:\n\n%s\n",
+				vpcName,
+				*result.Vpcs[i].VpcId,
+				*result.Vpcs[i].CidrBlock,
+				*result.Vpcs[i].IsDefault,
+				subnetDetails,
+			)
+		}))
+}
+
 func getDMSReplicationTasks() []*databasemigrationservice.ReplicationTask {
 	svc := databasemigrationservice.New(session.New())
 	input := &databasemigrationservice.DescribeReplicationTasksInput{}

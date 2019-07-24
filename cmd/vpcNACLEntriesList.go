@@ -180,7 +180,7 @@ var listNACLEntriesCmd = &cobra.Command{
 	Short: "List nacl entries in a Network ACL",
 	Long: `List NACL entries attached
 
-	.\yawsi.exe vpc list-nacl-entries --nacl-id acl-a7f118c1 --output-format tf_resource
+	$ yawsi vpc list-nacl-entries --nacl-id acl-a7f118c1 --output-format tf_resource
 
 	resource "aws_network_acl_rule" "rule_10" {
 		network_acl_id = "acl-a7f118c1"

@@ -36,11 +36,10 @@ func getSubnetCIDR(svc *ec2.EC2, subnetIDs ...string) map[string]string {
 				aws.String(subnetID),
 			},
 		}
-		result, err := svc.DescribeSubnets(input)
-		if err != nil {
-			log.Fatal(err)
+		subnets := getSubnets(input)
+		if len(subnets) == 1 {
+			subnetCIDR[subnetID] = *subnets[0].CidrBlock
 		}
-		subnetCIDR[subnetID] = *result.Subnets[0].CidrBlock
 	}
 	return subnetCIDR
 }
