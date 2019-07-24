@@ -52,6 +52,17 @@ func listVpcDetails(vpcs *ec2.DescribeVpcsOutput) {
 var listVpcsCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List VPCs",
+	Long: `List the VPCs and other details
+	
+	To list the VPCs alongwith some key information:
+
+		$ yawsi vpc  list
+		
+	To show further details in an interactive window:
+
+	    $ yawsi vpc list --details
+	
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if !vpcDetails {

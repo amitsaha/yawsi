@@ -53,7 +53,7 @@ func getSubnetName(tags []*ec2.Tag) string {
 			return *tag.Value
 		}
 	}
-	return ""
+	return "Subnet Name"
 }
 
 func getAdditionalTagsAsString(tags []*ec2.Tag) string {
@@ -88,6 +88,16 @@ func displaySubnetDetails(subnets []*ec2.Subnet) {
 var listSubnetsCmd = &cobra.Command{
 	Use:   "list-subnets",
 	Short: "List Subnets in a VPC",
+	Long: `List the subnets in a specific vpc
+	
+	To list the subnets in a VPC selected interactively:
+
+		$ yawsi vpc list-subnets
+		
+	To list subnets in a specific VPC:
+
+	    $ yawsi vpc list-subnets --vpc-id <vpc-id>	
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(vpcId) == 0 {
 			vpcId = selectVPCInteractive()

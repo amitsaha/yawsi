@@ -678,6 +678,7 @@ func displayVPCDetails() {
 			}
 
 			subnets := getSubnets(input)
+			subnetDetails = ""
 			for _, subnet := range subnets {
 				subnetDetails += fmt.Sprintf("%s (%s) - %s - %s\n", getSubnetName(subnet.Tags), getSubnetType(subnet.SubnetId), *subnet.SubnetId, *subnet.CidrBlock)
 			}
@@ -687,7 +688,7 @@ func displayVPCDetails() {
 				*result.Vpcs[i].VpcId,
 				*result.Vpcs[i].CidrBlock,
 				*result.Vpcs[i].IsDefault,
-				subnets,
+				subnetDetails,
 			)
 		}))
 }
