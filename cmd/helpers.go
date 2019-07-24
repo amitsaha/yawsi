@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"runtime"
 	"time"
@@ -568,8 +570,17 @@ func selectEC2InstanceInteractive(instanceData []*instanceState) *instanceState 
 			now := time.Now()
 			uptime := now.Sub(*instanceData[i].LaunchTime)
 
+			instanceTags := instanceData[i].Tags
+			sort.Slice(instanceTags, func(j, k int) bool {
+				r := strings.Compare(strings.ToUpper(*instanceTags[j].Key), strings.ToUpper(*instanceTags[k].Key))
+				if r == 0 || r == 1 {
+					return false
+				}
+				return true
+			})
+
 			tags = ""
-			for _, tag := range instanceData[i].Tags {
+			for _, tag := range instanceTags {
 				tags = tags + fmt.Sprintf("%s: %s\n", *tag.Key, *tag.Value)
 			}
 			return fmt.Sprintf("Instance ID: %s (%s)\nUptime: %s \nPrivate IP: %s\nPublic IP: %s\nSubnet: %s\nVPC: %s \n\n%s",
