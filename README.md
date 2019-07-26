@@ -16,7 +16,7 @@ Some of the sub-commands provide an fuzzy interactive interface making use of
 [go-fuzzyfinder](https://github.com/ktr0731/go-fuzzyfinder) which is another feature I really like.
 
 The command [yawsi vpc list-nacl-entries](./docs/yawsi_vpc_list-nacl-entries.md) also has the capability
-to generate [Terraform]h(ttps://www.terraform.io/) code for AWS network ACL entries given an AWS network acl ID.
+to generate [Terraform](ttps://www.terraform.io/) code for AWS network ACL entries given an AWS network acl ID.
 I found this to be really useful when importing existing AWS NACL resources into Terraform.
 
 For a list of all the commands/sub-commands, please see [docs](./docs/yawsi.md).
@@ -27,6 +27,11 @@ For a list of all the commands/sub-commands, please see [docs](./docs/yawsi.md).
 Binary releases are available from the [releases](https://github.com/amitsaha/yawsi/releases) page. 
 Please download the ZIP corresponding to your OS/architecture, unzip the file and place the binary somewhere
 on your system which is added to the system path. 
+
+### Bash completion
+
+To get automatic Tab completion of the commands, options and flags, put `complete -C yawsi yawsi` somewhere
+in your `~/.bashrc`.
 
 
 ## Specifying AWS profile
