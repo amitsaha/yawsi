@@ -552,6 +552,26 @@ func getAutoScalingGroups(params *autoscaling.DescribeAutoScalingGroupsInput) []
 	return autoScalingGroups
 }
 
+func getTagsAsString(tags []*ec2.Tag, delim string) string {
+	// Sort the tags in alphabetical order of the keys
+	sort.Slice(tags, func(j, k int) bool {
+		r := strings.Compare(strings.ToUpper(*tags[j].Key), strings.ToUpper(*tags[k].Key))
+		if r == 0 || r == 1 {
+			return false
+		}
+		return true
+	})
+
+	strTags := ""
+	for _, tag := range tags {
+		if *tag.Key != "Name" {
+			strTags += fmt.Sprintf("%s: %s%s", *tag.Key, *tag.Value, delim)
+		}
+	}
+
+	return strTags
+}
+
 func displayEC2Interactive(instanceData []*instanceState) {
 	selectedData := selectEC2InstanceInteractive(instanceData)
 	displayFixedInstanceDetails(selectedData)
@@ -561,7 +581,7 @@ func selectEC2InstanceInteractive(instanceData []*instanceState) *instanceState 
 
 	idx, _ := fuzzyfinder.Find(instanceData,
 		func(i int) string {
-			return fmt.Sprintf("[%s] %s %s", instanceData[i].InstanceId, instanceData[i].Name, instanceData[i].State)
+			return fmt.Sprintf("[%s] - %s", instanceData[i].InstanceId, instanceData[i].Name)
 		},
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 			if i == -1 {
@@ -569,23 +589,11 @@ func selectEC2InstanceInteractive(instanceData []*instanceState) *instanceState 
 			}
 			now := time.Now()
 			uptime := now.Sub(*instanceData[i].LaunchTime)
-
-			instanceTags := instanceData[i].Tags
-			sort.Slice(instanceTags, func(j, k int) bool {
-				r := strings.Compare(strings.ToUpper(*instanceTags[j].Key), strings.ToUpper(*instanceTags[k].Key))
-				if r == 0 || r == 1 {
-					return false
-				}
-				return true
-			})
-
-			tags = ""
-			for _, tag := range instanceTags {
-				tags = tags + fmt.Sprintf("%s: %s\n", *tag.Key, *tag.Value)
-			}
-			return fmt.Sprintf("Instance ID: %s (%s)\nUptime: %s \nPrivate IP: %s\nPublic IP: %s\nSubnet: %s\nVPC: %s \n\n%s",
+			tags := getTagsAsString(instanceData[i].Tags, "\n")
+			return fmt.Sprintf("Instance ID: %s (%s)\nStatus: %s\nUptime: %s \nPrivate IP: %s\nPublic IP: %s\nSubnet: %s\nVPC: %s \n\nTags: \n\n%s",
 				instanceData[i].InstanceId,
 				instanceData[i].Name,
+				instanceData[i].State,
 				uptime,
 				instanceData[i].PrivateIPAddresses,
 				instanceData[i].PublicIP,

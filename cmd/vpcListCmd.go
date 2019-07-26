@@ -42,7 +42,7 @@ func listVpcDetails(vpcs *ec2.DescribeVpcsOutput) {
 		fmt.Fprintf(w, "%s\t", *v.VpcId)
 		fmt.Fprintf(w, "%s\t", *v.CidrBlock)
 		fmt.Fprintf(w, "%v\t", *v.IsDefault)
-		fmt.Fprintf(w, "%s\t\n", getAdditionalTagsAsString(v.Tags))
+		fmt.Fprintf(w, "%s\t\n", getTagsAsString(v.Tags, " "))
 	}
 	fmt.Fprintln(w)
 	w.Flush()

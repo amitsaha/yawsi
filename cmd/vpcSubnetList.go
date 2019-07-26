@@ -56,15 +56,6 @@ func getSubnetName(tags []*ec2.Tag) string {
 	return "Subnet Name"
 }
 
-func getAdditionalTagsAsString(tags []*ec2.Tag) string {
-	tagsStr := ""
-	for _, tag := range tags {
-		if *tag.Key != "Name" {
-			tagsStr = tagsStr + *tag.Key + ":" + *tag.Value + " "
-		}
-	}
-	return tagsStr
-}
 func displaySubnetDetails(subnets []*ec2.Subnet) {
 	w := new(tabwriter.Writer)
 
@@ -78,7 +69,7 @@ func displaySubnetDetails(subnets []*ec2.Subnet) {
 		fmt.Fprintf(w, "%s\t", *subnet.SubnetId)
 		fmt.Fprintf(w, "%s\t", *subnet.CidrBlock)
 		fmt.Fprintf(w, "%s\t", getSubnetType(subnet.SubnetId))
-		fmt.Fprintf(w, "%s\t\n", getAdditionalTagsAsString(subnet.Tags))
+		fmt.Fprintf(w, "%s\t\n", getTagsAsString(subnet.Tags, " "))
 	}
 	fmt.Fprintln(w)
 	w.Flush()
