@@ -63,8 +63,8 @@ var rdpWindowsCmd = &cobra.Command{
 				}
 			}
 
-			instanceData := getEC2InstanceData(ec2Filters)
-			selectedInstance := selectEC2InstanceInteractive(instanceData)
+			instanceIDs := getEC2InstanceIDs(ec2Filters)
+			selectedInstance := selectEC2InstanceInteractive(instanceIDs)
 			instanceID = selectedInstance.InstanceId
 		}
 		rdpWindowsHelper(instanceID, PrivateIP, PublicIP, ShowCommand, KeyPath, rdpPassword)
