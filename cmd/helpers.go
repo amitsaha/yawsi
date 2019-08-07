@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/aws/aws-sdk-go/aws"
 
@@ -319,6 +322,44 @@ func getEC2InstanceIDs(ec2Filters []*ec2.Filter) []*string {
 	}
 
 	return instanceIDs
+}
+
+func getBasicEC2InstanceData(ec2Filters []*ec2.Filter, instanceIds ...*string) []*instanceState {
+	params := &ec2.DescribeInstancesInput{
+		DryRun:      aws.Bool(false),
+		InstanceIds: instanceIds,
+		Filters:     ec2Filters,
+	}
+	sess := createSession()
+	svc := ec2.New(sess)
+
+	var instanceStates []*instanceState
+
+	err := svc.DescribeInstancesPages(params,
+		func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
+			for _, r := range result.Reservations {
+				for _, instance := range r.Instances {
+					instanceState := instanceState{
+						InstanceId: *instance.InstanceId,
+						State:      *instance.State.Name,
+						LaunchTime: instance.LaunchTime,
+						Tags:       instance.Tags,
+					}
+					for _, tag := range instance.Tags {
+						if *tag.Key == "Name" {
+							instanceState.Name = *tag.Value
+						}
+					}
+					instanceStates = append(instanceStates, &instanceState)
+				}
+			}
+			return lastPage
+		})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return instanceStates
 }
 
 func getEC2InstanceData(ec2Filters []*ec2.Filter, instanceIds ...*string) []*instanceState {
@@ -626,9 +667,9 @@ func selectEC2InstanceInteractive(instanceIDs []*string) *instanceState {
 
 	idx, _ := fuzzyfinder.Find(instanceIDs,
 		func(i int) string {
-			//instanceData = getEC2InstanceData(ec2Filters, instanceIDs[i])
-			//return fmt.Sprintf("[%s] - %s", instanceData[0].InstanceId, instanceData[0].Name)
-			return fmt.Sprintf("[%s] - %s", *instanceIDs[i], *instanceIDs[i])
+			instanceData = getBasicEC2InstanceData(ec2Filters, instanceIDs[i])
+			return fmt.Sprintf("[%s] - %s - %s", *instanceIDs[i], instanceData[0].Name, instanceData[0].State)
+
 		},
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 			if i == -1 {
@@ -870,4 +911,101 @@ func getTableStatistics(taskArn string) []*databasemigrationservice.TableStatist
 	}
 
 	return result.TableStatistics
+}
+
+func startSSHSessionLinux(instanceDetails []*instanceState, PrivateIP bool, PublicIP bool, KeyPath string, username string) {
+
+	var remoteIP string
+	if PublicIP {
+		remoteIP = instanceDetails[0].PublicIP
+	} else {
+		remoteIP = instanceDetails[0].PrivateIPAddresses[0]
+	}
+
+	key, err := ioutil.ReadFile(KeyPath)
+	if err != nil {
+		log.Fatalf("unable to read private key: %v", err)
+	}
+
+	// Create the Signer for this private key.
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		log.Fatalf("unable to parse private key: %v", err)
+	}
+
+	config := &ssh.ClientConfig{
+		User: username,
+		Auth: []ssh.AuthMethod{
+			// Use the PublicKeys method for remote authentication.
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	// Connect to ssh server
+	conn, err := ssh.Dial("tcp", remoteIP+":22", config)
+	if err != nil {
+		log.Fatal("unable to connect: ", err)
+	}
+	defer conn.Close()
+
+	connClosed := make(chan error, 1)
+	go func() {
+		connClosed <- conn.Wait()
+	}()
+
+	// Create a session
+	session, err := conn.NewSession()
+	if err != nil {
+		log.Fatal("Unable to create session: ", err)
+	}
+	defer session.Close()
+
+	// Set IO
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+	in, _ := session.StdinPipe()
+
+	// Set up terminal modes
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          0,     // disable echoing
+		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+	}
+	// Request pseudo terminal
+	if err := session.RequestPty("xterm", 40, 80, modes); err != nil {
+		log.Fatal("Request for pseudo terminal failed: ", err)
+	}
+
+	// Start remote shell
+	if err := session.Shell(); err != nil {
+		log.Fatalf("Failed to start shell: %s", err)
+	}
+
+	// Accepting commands
+	for {
+		select {
+		default:
+			reader := bufio.NewReader(os.Stdin)
+			str, _ := reader.ReadString('\n')
+			_, err := fmt.Fprint(in, str)
+
+			// user typed in exit, trigger a connection close
+			// https://github.com/golang/go/issues/21699
+			if str == "exit\n" {
+				connClosed <- nil
+			}
+
+			// detect if the remote end has gone away
+			if err != nil && err == io.EOF {
+				connClosed <- nil
+			}
+		case err := <-connClosed:
+			if err != nil {
+				fmt.Printf("Remote connection has closed: %v\n", err)
+			} else {
+				fmt.Printf("Bye\n")
+			}
+			os.Exit(0)
+		}
+	}
 }
