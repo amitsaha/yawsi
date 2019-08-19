@@ -298,14 +298,16 @@ func summarizeResults(results ...*checkResult) bool {
 
 func getEC2InstanceIDs(ec2Filters []*ec2.Filter) []*string {
 	params := &ec2.DescribeInstancesInput{
-		DryRun:  aws.Bool(false),
-		Filters: ec2Filters,
+		DryRun:     aws.Bool(false),
+		Filters:    ec2Filters,
+		MaxResults: 10,
 	}
 	sess := createSession()
 	svc := ec2.New(sess)
 
 	var instanceIDs []*string
 
+	for {
 	err := svc.DescribeInstancesPages(params,
 		func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
 			for _, r := range result.Reservations {
@@ -314,8 +316,10 @@ func getEC2InstanceIDs(ec2Filters []*ec2.Filter) []*string {
 				}
 			}
 			return lastPage
-		},
-	)
+		})	
+	
+	params.NextToken = result.NextToken
+		}
 
 	if err != nil {
 		log.Fatal(err)
@@ -665,35 +669,39 @@ func selectEC2InstanceInteractive(instanceIDs []*string) *instanceState {
 	var ec2Filters []*ec2.Filter
 	var instanceData []*instanceState
 
-	idx, _ := fuzzyfinder.Find(instanceIDs,
+	previewFuncWindow := fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+		if i == -1 {
+			return ""
+		}
+		instanceData = getEC2InstanceData(ec2Filters, instanceIDs[i])
+
+		now := time.Now()
+		uptime := now.Sub(*instanceData[0].LaunchTime)
+		tags := getTagsAsString(instanceData[0].Tags, "\n")
+		return fmt.Sprintf("Instance ID: %s (%s)\nStatus: %s\nIAM Profile: %s\nSecurity Groups: %v\nUptime: %s \nPrivate IP: %s\nPublic IP: %s\nSubnet: %s\nVPC: %s \n\nTags: \n\n%s",
+			instanceData[0].InstanceId,
+			instanceData[0].Name,
+			instanceData[0].State,
+			instanceData[0].IAMProfile,
+			getSecurityGroupNames(instanceData[0].SecurityGroups),
+			uptime,
+			instanceData[0].PrivateIPAddresses,
+			instanceData[0].PublicIP,
+			instanceData[0].SubnetIds,
+			instanceData[0].VpcID,
+			tags,
+		)
+	})
+
+	idx, _ := fuzzyfinder.Find(
+		&instanceIDs,
 		func(i int) string {
 			instanceData = getBasicEC2InstanceData(ec2Filters, instanceIDs[i])
 			return fmt.Sprintf("[%s] - %s - %s", *instanceIDs[i], instanceData[0].Name, instanceData[0].State)
-
 		},
-		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
-			if i == -1 {
-				return ""
-			}
-			instanceData = getEC2InstanceData(ec2Filters, instanceIDs[i])
-
-			now := time.Now()
-			uptime := now.Sub(*instanceData[0].LaunchTime)
-			tags := getTagsAsString(instanceData[0].Tags, "\n")
-			return fmt.Sprintf("Instance ID: %s (%s)\nStatus: %s\nIAM Profile: %s\nSecurity Groups: %v\nUptime: %s \nPrivate IP: %s\nPublic IP: %s\nSubnet: %s\nVPC: %s \n\nTags: \n\n%s",
-				instanceData[0].InstanceId,
-				instanceData[0].Name,
-				instanceData[0].State,
-				instanceData[0].IAMProfile,
-				getSecurityGroupNames(instanceData[0].SecurityGroups),
-				uptime,
-				instanceData[0].PrivateIPAddresses,
-				instanceData[0].PublicIP,
-				instanceData[0].SubnetIds,
-				instanceData[0].VpcID,
-				tags,
-			)
-		}))
+		previewFuncWindow,
+		fuzzyfinder.WithHotReload(),
+	)
 	instanceData = getEC2InstanceData(ec2Filters, instanceIDs[idx])
 	return instanceData[0]
 }
