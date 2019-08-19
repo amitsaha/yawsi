@@ -296,36 +296,36 @@ func summarizeResults(results ...*checkResult) bool {
 	return true
 }
 
-func getEC2InstanceIDs(ec2Filters []*ec2.Filter) []*string {
+func getEC2InstanceIDs(ec2Filters []*ec2.Filter, instanceIDs *[]*string) {
+	var maxResults int64 = 20
 	params := &ec2.DescribeInstancesInput{
 		DryRun:     aws.Bool(false),
 		Filters:    ec2Filters,
-		MaxResults: 10,
+		MaxResults: &maxResults,
 	}
 	sess := createSession()
 	svc := ec2.New(sess)
 
-	var instanceIDs []*string
-
 	for {
-	err := svc.DescribeInstancesPages(params,
-		func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
-			for _, r := range result.Reservations {
-				for _, instance := range r.Instances {
-					instanceIDs = append(instanceIDs, instance.InstanceId)
+		var result ec2.DescribeInstancesOutput
+		err := svc.DescribeInstancesPages(params,
+			func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
+				for _, r := range result.Reservations {
+					for _, instance := range r.Instances {
+						*instanceIDs = append(*instanceIDs, instance.InstanceId)
+					}
 				}
-			}
-			return lastPage
-		})	
-	
-	params.NextToken = result.NextToken
+				return lastPage
+			})
+		if err != nil {
+			log.Fatal(err)
 		}
-
-	if err != nil {
-		log.Fatal(err)
+		if result.NextToken == nil {
+			break
+		}
+		params.NextToken = result.NextToken
 	}
 
-	return instanceIDs
 }
 
 func getBasicEC2InstanceData(ec2Filters []*ec2.Filter, instanceIds ...*string) []*instanceState {
@@ -650,7 +650,7 @@ func getTagsAsString(tags []*ec2.Tag, delim string) string {
 }
 
 func displayEC2Interactive(instanceIDs []*string) {
-	selectedData := selectEC2InstanceInteractive(instanceIDs)
+	selectedData := selectEC2InstanceInteractive(&instanceIDs)
 	displayFixedInstanceDetails(selectedData)
 }
 
@@ -664,7 +664,7 @@ func getSecurityGroupNames(sg []*ec2.GroupIdentifier) []string {
 
 }
 
-func selectEC2InstanceInteractive(instanceIDs []*string) *instanceState {
+func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 
 	var ec2Filters []*ec2.Filter
 	var instanceData []*instanceState
@@ -673,7 +673,7 @@ func selectEC2InstanceInteractive(instanceIDs []*string) *instanceState {
 		if i == -1 {
 			return ""
 		}
-		instanceData = getEC2InstanceData(ec2Filters, instanceIDs[i])
+		instanceData = getEC2InstanceData(ec2Filters, (*instanceIDs)[i])
 
 		now := time.Now()
 		uptime := now.Sub(*instanceData[0].LaunchTime)
@@ -693,16 +693,17 @@ func selectEC2InstanceInteractive(instanceIDs []*string) *instanceState {
 		)
 	})
 
+	fmt.Printf("I am here\n")
 	idx, _ := fuzzyfinder.Find(
 		&instanceIDs,
 		func(i int) string {
-			instanceData = getBasicEC2InstanceData(ec2Filters, instanceIDs[i])
-			return fmt.Sprintf("[%s] - %s - %s", *instanceIDs[i], instanceData[0].Name, instanceData[0].State)
+			instanceData = getBasicEC2InstanceData(ec2Filters, (*instanceIDs)[i])
+			return fmt.Sprintf("[%s] - %s - %s", (*instanceIDs)[i], instanceData[0].Name, instanceData[0].State)
 		},
 		previewFuncWindow,
 		fuzzyfinder.WithHotReload(),
 	)
-	instanceData = getEC2InstanceData(ec2Filters, instanceIDs[idx])
+	instanceData = getEC2InstanceData(ec2Filters, (*instanceIDs)[idx])
 	return instanceData[0]
 }
 

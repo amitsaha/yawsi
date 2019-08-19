@@ -146,12 +146,13 @@ var describeInstancesCmd = &cobra.Command{
 		}
 
 		// Not filtering by ASG name
+		var instanceIDs []*string
 		if len(asgName) == 0 {
 			if listInstances {
 				instancesData := getEC2InstanceData(ec2Filters, inputInstanceIds...)
 				displayFixedInstanceDetails(instancesData...)
 			} else {
-				instanceIDs := getEC2InstanceIDs(ec2Filters)
+				go getEC2InstanceIDs(ec2Filters, &instanceIDs)
 				displayEC2Interactive(instanceIDs)
 			}
 		}

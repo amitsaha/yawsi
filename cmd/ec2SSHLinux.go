@@ -65,8 +65,9 @@ var ec2SSHLinuxCmd = &cobra.Command{
 				}
 			}
 
-			instanceIDs := getEC2InstanceIDs(ec2Filters)
-			selectedInstanceDetails := selectEC2InstanceInteractive(instanceIDs)
+			var instanceIDs []*string
+			go getEC2InstanceIDs(ec2Filters, &instanceIDs)
+			selectedInstanceDetails := selectEC2InstanceInteractive(&instanceIDs)
 			instanceDetails = append(instanceDetails, selectedInstanceDetails)
 		}
 
