@@ -297,7 +297,7 @@ func summarizeResults(results ...*checkResult) bool {
 }
 
 func getEC2InstanceIDs(ec2Filters []*ec2.Filter, instanceIDs *[]*string) {
-	var maxResults int64 = 20
+	var maxResults int64 = 5
 	params := &ec2.DescribeInstancesInput{
 		DryRun:     aws.Bool(false),
 		Filters:    ec2Filters,
@@ -306,18 +306,25 @@ func getEC2InstanceIDs(ec2Filters []*ec2.Filter, instanceIDs *[]*string) {
 	sess := createSession()
 	svc := ec2.New(sess)
 
-	err := svc.DescribeInstancesPages(params,
-		func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
-			for _, r := range result.Reservations {
-				for _, instance := range r.Instances {
-					*instanceIDs = append(*instanceIDs, instance.InstanceId)
-				}
+	for {
+		result, err := svc.DescribeInstances(params)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, r := range result.Reservations {
+			for _, instance := range r.Instances {
+				*instanceIDs = append(*instanceIDs, instance.InstanceId)
 			}
-			return lastPage
-		})
-	if err != nil {
-		log.Fatal(err)
+		}
+
+		if result.NextToken != nil && len(*result.NextToken) != 0 {
+			params.NextToken = result.NextToken
+		} else {
+			break
+		}
 	}
+
+	//fmt.Printf("Finished executing getec2instanceIds: %v\n", len(*instanceIDs))
 
 }
 
@@ -642,8 +649,8 @@ func getTagsAsString(tags []*ec2.Tag, delim string) string {
 	return strTags
 }
 
-func displayEC2Interactive(instanceIDs []*string) {
-	selectedData := selectEC2InstanceInteractive(&instanceIDs)
+func displayEC2Interactive(instanceIDs *[]*string) {
+	selectedData := selectEC2InstanceInteractive(instanceIDs)
 	displayFixedInstanceDetails(selectedData)
 }
 
@@ -661,15 +668,6 @@ func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 
 	var ec2Filters []*ec2.Filter
 	var instanceData []*instanceState
-
-	for {
-		if len(*instanceIDs) > 10 {
-			break
-		} else {
-		}
-	}
-
-	fmt.Println("Out here\n")
 
 	previewFuncWindow := fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 		if i == -1 {
@@ -696,12 +694,13 @@ func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 	})
 
 	idx, _ := fuzzyfinder.Find(
-		&instanceIDs,
+		instanceIDs,
 		func(i int) string {
 			instanceData = getBasicEC2InstanceData(ec2Filters, (*instanceIDs)[i])
 			return fmt.Sprintf("[%s] - %s - %s", (*instanceIDs)[i], instanceData[0].Name, instanceData[0].State)
 		},
 		previewFuncWindow,
+		fuzzyfinder.WithHotReload(),
 	)
 	instanceData = getEC2InstanceData(ec2Filters, (*instanceIDs)[idx])
 

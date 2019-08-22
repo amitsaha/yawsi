@@ -152,9 +152,8 @@ var describeInstancesCmd = &cobra.Command{
 				instancesData := getEC2InstanceData(ec2Filters, inputInstanceIds...)
 				displayFixedInstanceDetails(instancesData...)
 			} else {
-				getEC2InstanceIDs(ec2Filters, &instanceIDs)
-				fmt.Println(len(instanceIDs))
-				displayEC2Interactive(instanceIDs)
+				go getEC2InstanceIDs(ec2Filters, &instanceIDs)
+				displayEC2Interactive(&instanceIDs)
 			}
 		}
 
