@@ -22,19 +22,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rdpWindowsCmd = &cobra.Command{
-	Use:   "rdp-windows",
-	Short: "RDP into Windows",
-	Long: `RDP into a EC2 instance running Windows
+var ec2SSHLinuxCmd = &cobra.Command{
+	Use:   "ssh-linux",
+	Short: "Start a SSH session into a Linux instance",
+	Long: `Start a SSH session into a Linux instance:
 
-	yawsi ec2 rdp-windows i-0121212
+	    yawsi ec2 ssh-linux i-0121212
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var instanceID string
 		var ec2Filters []*ec2.Filter
+		var instanceDetails []*instanceState
 
 		if len(args) == 1 {
 			instanceID = args[0]
+			instanceDetails = getEC2InstanceData(ec2Filters, &instanceID)
 		} else {
 			if len(tags) != 0 {
 				for _, tag := range strings.Split(tags, ",") {
@@ -62,31 +64,24 @@ var rdpWindowsCmd = &cobra.Command{
 					})
 				}
 			}
-			var instanceIDs []*string
 
+			var instanceIDs []*string
 			go getEC2InstanceIDs(ec2Filters, &instanceIDs)
-			selectedInstance := selectEC2InstanceInteractive(&instanceIDs)
-			instanceID = selectedInstance.InstanceId
+			selectedInstanceDetails := selectEC2InstanceInteractive(&instanceIDs)
+			instanceDetails = append(instanceDetails, selectedInstanceDetails)
 		}
-		rdpWindowsHelper(instanceID, PrivateIP, PublicIP, ShowCommand, KeyPath, rdpPassword)
+
+		startSSHSessionLinux(instanceDetails, PrivateIP, PublicIP, KeyPath, sshUsername)
 	},
-	//Args: cobra.ExactArgs(1),
 }
 
-var PrivateIP bool
-var PublicIP bool
-var ShowCommand bool
-var tagKeys string
-var rdpPassword string
+var sshUsername string
 
 func init() {
-	ec2Cmd.AddCommand(rdpWindowsCmd)
-	rdpWindowsCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
-	rdpWindowsCmd.Flags().StringVarP(&tagKeys, "tag-keys", "", "", "Tag keys to filter by (tag1, tags)")
-	rdpWindowsCmd.Flags().BoolVarP(&PrivateIP, "use-private-ip", "", true, "Use Private IP address")
-	rdpWindowsCmd.Flags().BoolVarP(&PublicIP, "use-public-ip", "", false, "Use Public IP address")
-	rdpWindowsCmd.Flags().StringVarP(&KeyPath, "key-path", "k", "", "Private Key to decrypt the password")
-	rdpWindowsCmd.Flags().StringVarP(&rdpPassword, "rdp-password", "", "", "RDP password")
-	rdpWindowsCmd.Flags().BoolVarP(&ShowCommand, "show-command", "", false, "Only display the OS command to execute")
-
+	ec2Cmd.AddCommand(ec2SSHLinuxCmd)
+	ec2SSHLinuxCmd.Flags().StringVarP(&tags, "tags", "t", "", "Tags to filter by (tag1:value1, tag2:value2)")
+	ec2SSHLinuxCmd.Flags().BoolVarP(&PrivateIP, "use-private-ip", "", true, "Use Private IP address")
+	ec2SSHLinuxCmd.Flags().BoolVarP(&PublicIP, "use-public-ip", "", false, "Use Public IP address")
+	ec2SSHLinuxCmd.Flags().StringVarP(&KeyPath, "key-path", "k", "", "Private Key to decrypt the password")
+	ec2SSHLinuxCmd.Flags().StringVarP(&sshUsername, "username", "u", "", "Username to SSH in as")
 }

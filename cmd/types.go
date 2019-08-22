@@ -27,6 +27,7 @@ type SecurityGroupRule struct {
 
 type instanceState struct {
 	InstanceId string
+	IAMProfile string
 	State      string
 	LaunchTime *time.Time
 	KeyName    string

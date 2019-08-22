@@ -23,8 +23,7 @@ version:
 	@ echo $(VERSION)
 
 build:          ## Build the binary
-	test $(BINARY_NAME)
-	go build -o $(BINARY_NAME) -ldflags "-X main.Version=$(VERSION)" 
+	go build -o yawsi -ldflags "-X main.Version=$(VERSION)" 
 
 build-deb:      ## Build DEB package (needs other tools)
 	test $(BINARY_NAME)

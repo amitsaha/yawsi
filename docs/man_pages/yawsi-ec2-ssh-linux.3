@@ -5,23 +5,23 @@
 
 .SH NAME
 .PP
-yawsi\-ec2\-rdp\-windows \- RDP into Windows
+yawsi\-ec2\-ssh\-linux \- Start a SSH session into a Linux instance
 
 
 .SH SYNOPSIS
 .PP
-\fByawsi ec2 rdp\-windows [flags]\fP
+\fByawsi ec2 ssh\-linux [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-RDP into a EC2 instance running Windows
+Start a SSH session into a Linux instance:
 
 .PP
 .RS
 
 .nf
-yawsi ec2 rdp\-windows i\-0121212
+    yawsi ec2 ssh\-linux i\-0121212
 
 .fi
 .RE
@@ -30,23 +30,11 @@ yawsi ec2 rdp\-windows i\-0121212
 .SH OPTIONS
 .PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
-    help for rdp\-windows
+    help for ssh\-linux
 
 .PP
 \fB\-k\fP, \fB\-\-key\-path\fP=""
     Private Key to decrypt the password
-
-.PP
-\fB\-\-rdp\-password\fP=""
-    RDP password
-
-.PP
-\fB\-\-show\-command\fP[=false]
-    Only display the OS command to execute
-
-.PP
-\fB\-\-tag\-keys\fP=""
-    Tag keys to filter by (tag1, tags)
 
 .PP
 \fB\-t\fP, \fB\-\-tags\fP=""
@@ -59,6 +47,10 @@ yawsi ec2 rdp\-windows i\-0121212
 .PP
 \fB\-\-use\-public\-ip\fP[=false]
     Use Public IP address
+
+.PP
+\fB\-u\fP, \fB\-\-username\fP=""
+    Username to SSH in as
 
 
 .SH SEE ALSO
