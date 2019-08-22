@@ -306,24 +306,17 @@ func getEC2InstanceIDs(ec2Filters []*ec2.Filter, instanceIDs *[]*string) {
 	sess := createSession()
 	svc := ec2.New(sess)
 
-	for {
-		var result ec2.DescribeInstancesOutput
-		err := svc.DescribeInstancesPages(params,
-			func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
-				for _, r := range result.Reservations {
-					for _, instance := range r.Instances {
-						*instanceIDs = append(*instanceIDs, instance.InstanceId)
-					}
+	err := svc.DescribeInstancesPages(params,
+		func(result *ec2.DescribeInstancesOutput, lastPage bool) bool {
+			for _, r := range result.Reservations {
+				for _, instance := range r.Instances {
+					*instanceIDs = append(*instanceIDs, instance.InstanceId)
 				}
-				return lastPage
-			})
-		if err != nil {
-			log.Fatal(err)
-		}
-		if result.NextToken == nil {
-			break
-		}
-		params.NextToken = result.NextToken
+			}
+			return lastPage
+		})
+	if err != nil {
+		log.Fatal(err)
 	}
 
 }
@@ -669,6 +662,15 @@ func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 	var ec2Filters []*ec2.Filter
 	var instanceData []*instanceState
 
+	for {
+		if len(*instanceIDs) > 10 {
+			break
+		} else {
+		}
+	}
+
+	fmt.Println("Out here\n")
+
 	previewFuncWindow := fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 		if i == -1 {
 			return ""
@@ -693,7 +695,6 @@ func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 		)
 	})
 
-	fmt.Printf("I am here\n")
 	idx, _ := fuzzyfinder.Find(
 		&instanceIDs,
 		func(i int) string {
@@ -701,9 +702,9 @@ func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 			return fmt.Sprintf("[%s] - %s - %s", (*instanceIDs)[i], instanceData[0].Name, instanceData[0].State)
 		},
 		previewFuncWindow,
-		fuzzyfinder.WithHotReload(),
 	)
 	instanceData = getEC2InstanceData(ec2Filters, (*instanceIDs)[idx])
+
 	return instanceData[0]
 }
 
