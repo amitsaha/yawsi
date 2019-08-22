@@ -297,7 +297,7 @@ func summarizeResults(results ...*checkResult) bool {
 }
 
 func getEC2InstanceIDs(ec2Filters []*ec2.Filter, instanceIDs *[]*string) {
-	var maxResults int64 = 5
+	var maxResults int64 = 10
 	params := &ec2.DescribeInstancesInput{
 		DryRun:     aws.Bool(false),
 		Filters:    ec2Filters,
@@ -323,8 +323,6 @@ func getEC2InstanceIDs(ec2Filters []*ec2.Filter, instanceIDs *[]*string) {
 			break
 		}
 	}
-
-	//fmt.Printf("Finished executing getec2instanceIds: %v\n", len(*instanceIDs))
 
 }
 
@@ -697,7 +695,7 @@ func selectEC2InstanceInteractive(instanceIDs *[]*string) *instanceState {
 		instanceIDs,
 		func(i int) string {
 			instanceData = getBasicEC2InstanceData(ec2Filters, (*instanceIDs)[i])
-			return fmt.Sprintf("[%s] - %s - %s", (*instanceIDs)[i], instanceData[0].Name, instanceData[0].State)
+			return fmt.Sprintf("[%s] - %s - %s", *(*instanceIDs)[i], instanceData[0].Name, instanceData[0].State)
 		},
 		previewFuncWindow,
 		fuzzyfinder.WithHotReload(),
