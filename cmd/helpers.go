@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -1015,4 +1016,76 @@ func startSSHSessionLinux(instanceDetails []*instanceState, PrivateIP bool, Publ
 			os.Exit(0)
 		}
 	}
+}
+
+func GetNetworkInterfaces(input *ec2.DescribeNetworkInterfacesInput) *ec2.DescribeNetworkInterfacesOutput {
+
+	sess := createSession()
+	svc := ec2.New(sess)
+
+	result, err := svc.DescribeNetworkInterfaces(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return nil
+	}
+
+	return result
+}
+
+func GetIAMRoleArnToAssume(projectName string, environmentName string) *string {
+	sess := createSession()
+	svc := iam.New(sess)
+	input := &iam.GetRoleInput{
+		RoleName: aws.String(fmt.Sprintf("%s-%s-humans", projectName, environmentName)),
+	}
+
+	result, err := svc.GetRole(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case iam.ErrCodeNoSuchEntityException:
+				fmt.Println(iam.ErrCodeNoSuchEntityException, aerr.Error())
+			case iam.ErrCodeServiceFailureException:
+				fmt.Println(iam.ErrCodeServiceFailureException, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return nil
+	}
+
+	var expectedTagValueMap = map[string]string{
+		"Project":     projectName,
+		"Environment": environmentName,
+		"Role":        "EKSUserAuth",
+	}
+	for _, t := range result.Role.Tags {
+		if len(expectedTagValueMap[*t.Key]) != 0 {
+			if expectedTagValueMap[*t.Key] == *t.Value {
+				continue
+			} else {
+				return nil
+			}
+		}
+	}
+	return result.Role.Arn
+}
+
+func GetUserHomeDir() string {
+	usr, _ := user.Current()
+	homeDir := usr.HomeDir
+	return homeDir
 }
