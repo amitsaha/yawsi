@@ -5,17 +5,17 @@
 
 .SH NAME
 .PP
-yawsi\-vpc\-list \- List VPCs
+yawsi\-r53\-list\-zones \- List Route53 zones
 
 
 .SH SYNOPSIS
 .PP
-\fByawsi vpc list [flags]\fP
+\fByawsi r53 list\-zones [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-List the VPCs and other details
+List the Route53 zones
 
 .PP
 .RS
@@ -23,11 +23,7 @@ List the VPCs and other details
 .nf
 To list the VPCs alongwith some key information:
 
-    $ yawsi vpc  list
-
-To show further details in an interactive window:
-
-    $ yawsi vpc list \-\-details
+    $ yawsi r53 list\-zones      
 
 .fi
 .RE
@@ -35,17 +31,13 @@ To show further details in an interactive window:
 
 .SH OPTIONS
 .PP
-\fB\-\-details\fP[=false]
-    Show VPC details
-
-.PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
-    help for list
+    help for list\-zones
 
 
 .SH SEE ALSO
 .PP
-\fByawsi\-vpc(3)\fP
+\fByawsi\-r53(3)\fP
 
 
 .SH HISTORY
