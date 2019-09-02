@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,12 +13,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/tabwriter"
 
 	"runtime"
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -1088,4 +1091,137 @@ func GetUserHomeDir() string {
 	usr, _ := user.Current()
 	homeDir := usr.HomeDir
 	return homeDir
+}
+
+func GetR53Zone(zoneId string) {
+	svc := route53.New(session.New())
+	input := &route53.GetHostedZoneInput{
+		Id: aws.String(zoneId),
+	}
+
+	result, err := svc.GetHostedZone(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case route53.ErrCodeNoSuchHostedZone:
+				fmt.Println(route53.ErrCodeNoSuchHostedZone, aerr.Error())
+			case route53.ErrCodeInvalidInput:
+				fmt.Println(route53.ErrCodeInvalidInput, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return
+	}
+
+	fmt.Println(result)
+}
+
+func ListR53Zones() {
+	svc := route53.New(session.New())
+	input := &route53.ListHostedZonesInput{}
+
+	result, err := svc.ListHostedZones(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case route53.ErrCodeNoSuchHostedZone:
+				fmt.Println(route53.ErrCodeNoSuchHostedZone, aerr.Error())
+			case route53.ErrCodeInvalidInput:
+				fmt.Println(route53.ErrCodeInvalidInput, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return
+	}
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 35, 0, 1, ' ', 0)
+	fmt.Fprintln(w, "Name \t ID \tPrivate\tComment\t")
+	fmt.Fprintln(w, "-----\t----------\t--------\t--------\t")
+
+	for _, z := range result.HostedZones {
+
+		fmt.Fprintf(w, "%s\t", *z.Name)
+		fmt.Fprintf(w, "%s\t", *z.Id)
+		fmt.Fprintf(w, "%v\t", *z.Config.PrivateZone)
+		if z.Config.Comment != nil {
+			fmt.Fprintf(w, "%v\t", *z.Config.Comment)
+		}
+		fmt.Fprintf(w, "\n")
+	}
+	fmt.Fprintln(w)
+	w.Flush()
+
+}
+
+func ListR53Records(zoneId string) *route53.ListResourceRecordSetsOutput {
+
+	svc := route53.New(session.New())
+	input := &route53.ListResourceRecordSetsInput{
+		HostedZoneId: &zoneId,
+	}
+
+	result, err := svc.ListResourceRecordSets(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case route53.ErrCodeNoSuchHostedZone:
+				fmt.Println(route53.ErrCodeNoSuchHostedZone, aerr.Error())
+			case route53.ErrCodeInvalidInput:
+				fmt.Println(route53.ErrCodeInvalidInput, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return nil
+	}
+	return result
+
+}
+
+func GetRoute53ZoneID(zoneName string) (string, error) {
+
+	svc := route53.New(session.New())
+	input := &route53.ListHostedZonesInput{}
+
+	result, err := svc.ListHostedZones(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case route53.ErrCodeNoSuchHostedZone:
+				fmt.Println(route53.ErrCodeNoSuchHostedZone, aerr.Error())
+			case route53.ErrCodeInvalidInput:
+				fmt.Println(route53.ErrCodeInvalidInput, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return "", err
+	}
+
+	for _, z := range result.HostedZones {
+
+		if *z.Name == zoneName+"." {
+			return *z.Id, nil
+		}
+	}
+	return "", errors.New("No Route53 hosted zone found")
+
 }

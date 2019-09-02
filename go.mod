@@ -3,6 +3,7 @@ module github.com/amitsaha/yawsi
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/aws/aws-sdk-go v1.23.7
+	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/fatih/color v1.7.0
 	github.com/go-ini/ini v1.32.0 // indirect
