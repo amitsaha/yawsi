@@ -26,15 +26,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func migratToCloudFlare(zoneName string, recordSet *route53.ListResourceRecordSetsOutput) {
+func AddRecordsToCloudflare(cfClient *cloudflare.API, zoneName string, recordSet *route53.ListResourceRecordSetsOutput) {
 
-	// Construct a new API object
-	api, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Fetch the zone ID
-	zoneID, err := api.ZoneIDByName(zoneName)
+	zoneID, err := cfClient.ZoneIDByName(zoneName)
 	if err != nil {
 		log.Fatal("Cloudflare: " + err.Error())
 	}
@@ -53,7 +47,7 @@ func migratToCloudFlare(zoneName string, recordSet *route53.ListResourceRecordSe
 		}
 		cFlareRecord.Type = *r53record.Type
 
-		records, err := api.DNSRecords(zoneID, cFlareRecord)
+		records, err := cfClient.DNSRecords(zoneID, cFlareRecord)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -76,7 +70,7 @@ func migratToCloudFlare(zoneName string, recordSet *route53.ListResourceRecordSe
 				cFlareRecord.Type = "CNAME"
 			}
 
-			r, err := api.CreateDNSRecord(zoneID, cFlareRecord)
+			r, err := cfClient.CreateDNSRecord(zoneID, cFlareRecord)
 			if err != nil {
 				log.Fatal(err)
 			} else {
@@ -103,7 +97,11 @@ var exportR53ZoneCloudflareCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		svc := route53.New(session.New())
-		migratToCloudFlare(r53ZoneName, ListR53RecordSets(svc, r53ZoneId))
+		cfClient, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		AddRecordsToCloudflare(cfClient, r53ZoneName, ListR53RecordSets(svc, r53ZoneId))
 
 	},
 }
