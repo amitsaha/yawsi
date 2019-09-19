@@ -20,6 +20,7 @@ import (
 
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/spf13/cobra"
@@ -101,7 +102,8 @@ var exportR53ZoneCloudflareCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		migratToCloudFlare(r53ZoneName, ListR53Records(r53ZoneId))
+		svc := route53.New(session.New())
+		migratToCloudFlare(r53ZoneName, ListR53RecordSets(svc, r53ZoneId))
 
 	},
 }

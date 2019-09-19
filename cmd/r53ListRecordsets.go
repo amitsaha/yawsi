@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +39,8 @@ var listR53RecordsCmd = &cobra.Command{
 		if len(r53zoneId) == 0 {
 			log.Fatal("Specify zone-name")
 		}
-		r := ListR53Records(r53zoneId)
+		svc := route53.New(session.New())
+		r := ListR53RecordSets(svc, r53zoneId)
 		fmt.Println(r)
 	},
 }

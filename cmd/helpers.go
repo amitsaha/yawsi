@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/databasemigrationservice"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -1163,9 +1164,8 @@ func ListR53Zones() {
 
 }
 
-func ListR53Records(zoneId string) *route53.ListResourceRecordSetsOutput {
+func ListR53RecordSets(svc route53iface.Route53API, zoneId string) *route53.ListResourceRecordSetsOutput {
 
-	svc := route53.New(session.New())
 	input := &route53.ListResourceRecordSetsInput{
 		HostedZoneId: &zoneId,
 	}
