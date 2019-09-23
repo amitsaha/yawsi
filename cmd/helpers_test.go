@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -110,57 +111,7 @@ func TestCopyRoute53RecordsToCloudflare(t *testing.T) {
 			"result": [
 			  {
 				"id": "023e105f4ecef8ad9ca31a8372d0c353",
-				"name": "example.org",
-				"development_mode": 7200,
-				"original_name_servers": [
-				  "ns1.originaldnshost.com",
-				  "ns2.originaldnshost.com"
-				],
-				"original_registrar": "GoDaddy",
-				"original_dnshost": "NameCheap",
-				"created_on": "2014-01-01T05:20:00.12345Z",
-				"modified_on": "2014-01-01T05:20:00.12345Z",
-				"activated_on": "2014-01-02T00:01:00.12345Z",
-				"owner": {
-				  "id": {},
-				  "email": {},
-				  "type": "user"
-				},
-				"account": {
-				  "id": "01a7362d577a6c3019a474fd6f485823",
-				  "name": "Demo Account"
-				},
-				"permissions": [
-				  "#zone:read",
-				  "#zone:edit"
-				],
-				"plan": {
-				  "id": "e592fd9519420ba7405e1307bff33214",
-				  "name": "Pro Plan",
-				  "price": 20,
-				  "currency": "USD",
-				  "frequency": "monthly",
-				  "legacy_id": "pro",
-				  "is_subscribed": true,
-				  "can_subscribe": true
-				},
-				"plan_pending": {
-				  "id": "e592fd9519420ba7405e1307bff33214",
-				  "name": "Pro Plan",
-				  "price": 20,
-				  "currency": "USD",
-				  "frequency": "monthly",
-				  "legacy_id": "pro",
-				  "is_subscribed": true,
-				  "can_subscribe": true
-				},
-				"status": "active",
-				"paused": false,
-				"type": "full",
-				"name_servers": [
-				  "tony.ns.cloudflare.com",
-				  "woz.ns.cloudflare.com"
-				]
+				"name": "example.org"
 			  }
 			]
 		  }
@@ -168,16 +119,14 @@ func TestCopyRoute53RecordsToCloudflare(t *testing.T) {
 	}
 
 	// test case: No existing DNS records for zone
-	getZoneDNSRecordsHandler := func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.Method, "GET", "Expected method 'GET', got %s", r.Method)
-		w.Header().Set("content-type", "application/json")
-		fmt.Fprintf(w, `{}`)
-	}
+	zoneDNSRecordsHandler := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			w.Header().Set("content-type", "application/json")
+			fmt.Fprintf(w, `{}`)
+		} else if r.Method == "POST" {
 
-	createDNSRecordHandler := func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.Method, "POST", "Expected method 'POST', got %s", r.Method)
-		w.Header().Set("content-type", "application/json")
-		fmt.Fprintf(w, `
+			w.Header().Set("content-type", "application/json")
+			fmt.Fprintf(w, `
 		{
 			"success": true,
 			"errors": [],
@@ -189,19 +138,29 @@ func TestCopyRoute53RecordsToCloudflare(t *testing.T) {
 			  "content": "198.51.100.4",
 			  "proxiable": true,
 			  "proxied": false,
-			  "ttl": {},
 			  "locked": false,
 			  "zone_id": "023e105f4ecef8ad9ca31a8372d0c353",
-			  "zone_name": "example.com",
+			  "zone_name": "example.org",
 			  "created_on": "2014-01-01T05:20:00.12345Z",
 			  "modified_on": "2014-01-01T05:20:00.12345Z",
 			  "data": {}
 			}
 		  }
 		`)
+		} else {
+			t.Errorf("Unexpected HTTP Method")
+			os.Exit(1)
+
+		}
 	}
 
-	mux.HandleFunc("/zones/?name=example.org", getZoneHandler)
-	mux.HandleFunc("/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records", getZoneDNSRecordsHandler)
+	mux.HandleFunc("/zones", getZoneHandler)
+	mux.HandleFunc("/zones/023e105f4ecef8ad9ca31a8372d0c353/dns_records", zoneDNSRecordsHandler)
+
+	mockSvc := &mockRoute53Client{}
+	cfRecords := AddRecordsToCloudflare(cfClient, "example.org", ListR53RecordSets(mockSvc, "example.org"))
+	if len(cfRecords) != 5 {
+		t.Errorf("Expected 5 cloudflare records to be created, got %v \n", len(cfRecords))
+	}
 
 }

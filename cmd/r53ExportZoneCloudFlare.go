@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -26,58 +27,61 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func AddRecordsToCloudflare(cfClient *cloudflare.API, zoneName string, recordSet *route53.ListResourceRecordSetsOutput) {
+func AddRecordsToCloudflare(cfClient *cloudflare.API, zoneName string, recordSet *route53.ListResourceRecordSetsOutput) []*cloudflare.DNSRecordResponse {
 
 	zoneID, err := cfClient.ZoneIDByName(zoneName)
 	if err != nil {
 		log.Fatal("Cloudflare: " + err.Error())
 	}
 
+	var cfDNSRecords []*cloudflare.DNSRecordResponse
+
 	for _, r53record := range recordSet.ResourceRecordSets {
 		if *r53record.Type == "SOA" {
 			log.Printf("Skipping %v\n", r53record)
 			continue
 		}
-		cFlareRecord := cloudflare.DNSRecord{}
-		if strings.HasSuffix(*r53record.Name, ".") {
-			log.Printf("Trailing . in route53 record name: %v\n", *r53record.Name)
-			cFlareRecord.Name = strings.TrimSuffix(*r53record.Name, ".")
-		} else {
-			cFlareRecord.Name = *r53record.Name
-		}
-		cFlareRecord.Type = *r53record.Type
-
-		records, err := cfClient.DNSRecords(zoneID, cFlareRecord)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if len(records) != 0 {
-			log.Printf("Found existing record(s) for %s\n", cFlareRecord.Name)
-			for _, r := range records {
-				log.Println(r)
+		if r53record.ResourceRecords != nil {
+			cFlareRecord := cloudflare.DNSRecord{}
+			if strings.HasSuffix(*r53record.Name, ".") {
+				log.Printf("Trailing . in route53 record name: %v\n", *r53record.Name)
+				cFlareRecord.Name = strings.TrimSuffix(*r53record.Name, ".")
+			} else {
+				cFlareRecord.Name = *r53record.Name
 			}
-		} else {
-			log.Printf("Creating DNS record in cloudflare: %v\n", cFlareRecord)
+			cFlareRecord.Type = *r53record.Type
 
-			if r53record.ResourceRecords != nil {
-				for _, r53r := range r53record.ResourceRecords {
-					cFlareRecord.Content = *r53r.Value
-				}
-
-			}
-			if r53record.AliasTarget != nil {
-				cFlareRecord.Content = *r53record.AliasTarget.DNSName
-				cFlareRecord.Type = "CNAME"
-			}
-
-			r, err := cfClient.CreateDNSRecord(zoneID, cFlareRecord)
+			records, err := cfClient.DNSRecords(zoneID, cFlareRecord)
 			if err != nil {
 				log.Fatal(err)
+			}
+			if len(records) != 0 {
+				log.Printf("Found existing record(s) for %s\n", cFlareRecord.Name)
+				for _, r := range records {
+					log.Println(r)
+				}
 			} else {
-				log.Printf("Added record to cloudflare: %v\n", r)
+
+				for _, r53r := range r53record.ResourceRecords {
+					cFlareRecord.Content = *r53r.Value
+
+					if r53record.AliasTarget != nil {
+						cFlareRecord.Content = *r53record.AliasTarget.DNSName
+						cFlareRecord.Type = "CNAME"
+					}
+
+					log.Printf("Creating DNS record in cloudflare: %v\n", cFlareRecord)
+					r, err := cfClient.CreateDNSRecord(zoneID, cFlareRecord)
+					if err != nil {
+						log.Fatal(err)
+					}
+					cfDNSRecords = append(cfDNSRecords, r)
+				}
 			}
 		}
 	}
+
+	return cfDNSRecords
 }
 
 var exportR53ZoneCloudflareCmd = &cobra.Command{
@@ -101,7 +105,8 @@ var exportR53ZoneCloudflareCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		AddRecordsToCloudflare(cfClient, r53ZoneName, ListR53RecordSets(svc, r53ZoneId))
+		res := AddRecordsToCloudflare(cfClient, r53ZoneName, ListR53RecordSets(svc, r53ZoneId))
+		fmt.Println(res)
 
 	},
 }

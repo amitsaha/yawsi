@@ -19,6 +19,7 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c // indirect
 	github.com/spf13/cobra v0.0.1
 	github.com/spf13/pflag v1.0.0
+	github.com/stretchr/testify v1.4.0
 	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
 	golang.org/x/text v0.0.0-20171227012246-e19ae1496984 // indirect
